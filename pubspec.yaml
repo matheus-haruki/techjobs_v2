@@ -37,6 +37,7 @@ dependencies:
   flutter_modular: ^6.4.1
   google_fonts: ^8.1.0
   flutter_svg: ^2.3.0
+  flutter_card_swiper: ^7.2.0
 
 dev_dependencies:
   flutter_test:

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // Importante para ler os seus ícones .svg
-import 'package:techjobs/core/style/app_colors.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:techjobs/modules/candidato/controller/cadidate_controller.dart';
 import 'package:techjobs/modules/candidato/view/widgets/connections_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/feed_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/notifications_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/profile_page.dart';
-import 'package:techjobs/modules/candidato/view/widgets/search_page.dart';
+import 'package:techjobs/modules/candidato/view/widgets/search_page.dart'; // <-- Importante
 
 class BaseCandidatePage extends StatefulWidget {
   const BaseCandidatePage({super.key});
@@ -15,9 +15,9 @@ class BaseCandidatePage extends StatefulWidget {
 }
 
 class _BaseCandidatePageState extends State<BaseCandidatePage> {
-  int _currentIndex = 0; // Controla qual aba está ativa
+  // Recupera o controller do Modular
+  final _controller = Modular.get<CandidateController>();
 
-  // Lista com as 5 páginas na ordem exata do menu
   final List<Widget> _pages = [
     const FeedPage(),
     const SearchPage(),
@@ -26,101 +26,77 @@ class _BaseCandidatePageState extends State<BaseCandidatePage> {
     const ProfilePage(),
   ];
 
-  // Cor padrão do app para itens ativos e inativos
-  final Color _activeColor = AppColors.primaryDark;
-  final Color _inactiveColor = AppColors.textBody;
+  final Color _activeColor = const Color(0xFF5A92AA);
+  final Color _inactiveColor = Colors.grey;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // O IndexedStack mantém o estado de todas as telas vivo ao alternar as abas
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+    // Usamos o ValueListenableBuilder para redesenhar a tela quando a aba mudar
+    return ValueListenableBuilder<int>(
+      valueListenable: _controller,
+      builder: (context, currentIndex, child) {
+        return Scaffold(
+          body: IndexedStack(index: currentIndex, children: _pages),
+          bottomNavigationBar: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType
-              .fixed, // Garante que as 5 abas caibam perfeitamente
-          backgroundColor: AppColors.white,
-          selectedItemColor: _activeColor,
-          unselectedItemColor: _inactiveColor,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 10,
+            child: BottomNavigationBar(
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              currentIndex: currentIndex,
+              onTap: _controller.changeTab, // Altera a aba pelo controller
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: _activeColor,
+              unselectedItemColor: _inactiveColor,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.home_rounded,
+                    color: currentIndex == 0 ? _activeColor : _inactiveColor,
+                  ),
+                  label: 'Feed',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.search_rounded,
+                    color: currentIndex == 1 ? _activeColor : _inactiveColor,
+                  ),
+                  label: 'Buscar',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.favorite_rounded,
+                    color: currentIndex == 2 ? _activeColor : _inactiveColor,
+                  ),
+                  label: 'Conexões',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.notifications_rounded,
+                    color: currentIndex == 3 ? _activeColor : _inactiveColor,
+                  ),
+                  label: 'Notif.',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.person_rounded,
+                    color: currentIndex == 4 ? _activeColor : _inactiveColor,
+                  ),
+                  label: 'Perfil',
+                ),
+              ],
+            ),
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
-          items: [
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/home.svg',
-                colorFilter: ColorFilter.mode(
-                  _currentIndex == 0 ? _activeColor : _inactiveColor,
-                  BlendMode.srcIn,
-                ),
-                height: 20,
-              ),
-              label: 'Feed',
-            ),
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/search.svg', // Corrigi o "serach.svg" do caminho para o padrão correto
-                colorFilter: ColorFilter.mode(
-                  _currentIndex == 1 ? _activeColor : _inactiveColor,
-                  BlendMode.srcIn,
-                ),
-                height: 20,
-              ),
-              label: 'Buscar',
-            ),
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/match.svg',
-                colorFilter: ColorFilter.mode(
-                  _currentIndex == 2 ? _activeColor : _inactiveColor,
-                  BlendMode.srcIn,
-                ),
-                height: 20,
-              ),
-              label: 'Conexões',
-            ),
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/notification.svg',
-                colorFilter: ColorFilter.mode(
-                  _currentIndex == 3 ? _activeColor : _inactiveColor,
-                  BlendMode.srcIn,
-                ),
-                height: 20,
-              ),
-              label: 'Notificações',
-            ),
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/profile.svg',
-                colorFilter: ColorFilter.mode(
-                  _currentIndex == 4 ? _activeColor : _inactiveColor,
-                  BlendMode.srcIn,
-                ),
-                height: 20,
-              ),
-              label: 'Perfil',
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

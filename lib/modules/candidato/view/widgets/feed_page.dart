@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart'; // <-- Pacote importado!
 import 'package:techjobs/core/components/custom_app_bar.dart';
@@ -161,7 +162,7 @@ class _FeedPageState extends State<FeedPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha:0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -226,7 +227,7 @@ class _FeedPageState extends State<FeedPage> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -276,6 +277,23 @@ class _FeedPageState extends State<FeedPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+
+              Center(
+                child: TextButton(
+                  onPressed: () => Modular.to.pushNamed(
+                    '/candidate/job-details',
+                    arguments: job,
+                  ),
+                  child: Text(
+                    'Ver Detalhes',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textTitle,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ), // Fecha o SingleChildScrollView
@@ -317,7 +335,7 @@ class _FeedPageState extends State<FeedPage> {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha:0.2),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),

@@ -13,6 +13,7 @@ class AppColors {
 
   // Cores Neutras e de Fundo
   static const Color background = Color(0xFFF8F9FA);
+  static const Color chatAppBar = Color.fromARGB(255, 208, 217, 225);
   static const Color white = Colors.white;
 
   // Cores de Texto e Status

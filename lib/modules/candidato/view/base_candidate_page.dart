@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:techjobs/modules/candidato/controller/cadidate_controller.dart';
+import 'package:techjobs/modules/candidato/controller/candidate_controller.dart';
 import 'package:techjobs/modules/candidato/view/widgets/connections_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/feed_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/notifications_page.dart';

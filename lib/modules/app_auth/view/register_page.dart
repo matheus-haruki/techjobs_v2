@@ -7,6 +7,9 @@ import 'package:techjobs/core/style/app_colors.dart';
 import 'package:techjobs/core/style/app_fonts.dart';
 import 'package:techjobs/modules/app_auth/controller/auth_controller.dart';
 import 'package:techjobs/modules/app_auth/model/user_model.dart';
+// Imports necessários para construir o modelo vazio de onboarding
+import 'package:techjobs/modules/candidato/model/candidate_model.dart';
+import 'package:techjobs/modules/candidato/model/job_model.dart'; // Ajuste o caminho do seu enum WorkModel se estiver em outro arquivo
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -20,7 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final _nameEC = TextEditingController();
   final _emailEC = TextEditingController();
-  final _cnpjEC = TextEditingController(); // Novo Controller para o CNPJ
+  final _cnpjEC = TextEditingController();
   final _passwordEC = TextEditingController();
   final _confirmPasswordEC = TextEditingController();
 
@@ -32,7 +35,6 @@ class _RegisterPageState extends State<RegisterPage> {
   void initState() {
     super.initState();
     _controller.addListener(_handleStateChange);
-    // Reconstruir quando o campo de senha ganhar/perder foco
     _passwordFocusNode.addListener(() {
       setState(() {});
     });
@@ -40,6 +42,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _handleStateChange() {
     final state = _controller.value;
+
     if (state is SuccessState<UserModel>) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -48,10 +51,28 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       );
 
-      // MÁGICA AQUI: Navega para a base do módulo do candidato e limpa a pilha de telas
-      Modular.to.navigate('/candidate/');
+      if (state.data.role == 'company') {
+        Modular.to.pushNamedAndRemoveUntil('/company/', (route) => false);
+      } else {
+        final newCandidate = CandidateModel(
+          id: state.data.id,
+          name: state.data.name,
+          bio: null,
+          role: null,
+          location: null,
+          avatarUrl: null,
+          skills: [],
+          experiences: [],
+        );
 
-      // Aqui faríamos o redirecionamento automático
+        // NAVEGAÇÃO NATIVA RESTRITA
+        // Remove todo o histórico de navegação ((route) => false) e injeta a edição como raiz.
+        Modular.to.pushNamedAndRemoveUntil(
+          '/candidate/edit-profile',
+          (route) => false,
+          arguments: newCandidate,
+        );
+      }
     } else if (state is ErrorState<UserModel>) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(state.message), backgroundColor: Colors.red),
@@ -64,14 +85,13 @@ class _RegisterPageState extends State<RegisterPage> {
     _controller.removeListener(_handleStateChange);
     _nameEC.dispose();
     _emailEC.dispose();
-    _cnpjEC.dispose(); // Não esqueça de dar dispose no novo controller
+    _cnpjEC.dispose();
     _passwordEC.dispose();
     _confirmPasswordEC.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
   }
 
-  // Widget para desenhar as regrinhas da senha
   Widget _buildValidationRow(String text, bool isValid) {
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
@@ -87,7 +107,7 @@ class _RegisterPageState extends State<RegisterPage> {
             text,
             style: TextStyle(
               color: isValid ? Colors.green : Colors.red,
-              fontSize: 12, // Fonte um pouco menor para não poluir
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -132,7 +152,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 24),
 
-              // Toggle Candidato / Empresa
               Container(
                 height: 45,
                 decoration: BoxDecoration(
@@ -194,7 +213,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 24),
 
-              // O rótulo muda de acordo com o papel selecionado
               CustomInputField(
                 label: _selectedRole == 'empresa'
                     ? 'Nome da empresa:'
@@ -215,7 +233,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 16),
 
-              // Campo de CNPJ só aparece se for Empresa
               if (_selectedRole == 'empresa') ...[
                 CustomInputField(
                   label: 'CNPJ:',
@@ -235,13 +252,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 8),
 
-              // Novo: Lista de validação em tempo real
               if (_passwordFocusNode.hasFocus)
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _passwordEC,
                   builder: (context, value, child) {
                     final text = value.text;
-                    // Regras de validação
                     final hasMinLength = text.length >= 8;
                     final hasLowercase = RegExp(r'[a-z]').hasMatch(text);
                     final hasUppercase = RegExp(r'[A-Z]').hasMatch(text);
@@ -275,7 +290,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 32),
 
-              // Botão de Cadastro
               ValueListenableBuilder<AppState<UserModel>>(
                 valueListenable: _controller,
                 builder: (context, state, child) {
@@ -284,14 +298,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   return CustomButton(
                     title: 'Finalizar cadastro',
                     isLoading: isLoading,
-                    // Se for empresa, fica Laranja. Se for candidato, fica Azul.
                     color: _selectedRole == 'empresa'
                         ? Colors.orange
                         : const Color(0xFF5A92AA),
                     onPressed: () {
                       final password = _passwordEC.text;
 
-                      // Validação em tempo real das regras da senha
                       final isPasswordValid =
                           password.length >= 8 &&
                           RegExp(r'[a-z]').hasMatch(password) &&
@@ -310,7 +322,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         return;
                       }
 
-                      // Verifica se as senhas coincidem
                       if (password != _confirmPasswordEC.text) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -321,7 +332,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         return;
                       }
 
-                      // Validação do CNPJ
                       if (_selectedRole == 'empresa' &&
                           _cnpjEC.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -335,22 +345,23 @@ class _RegisterPageState extends State<RegisterPage> {
                         return;
                       }
 
-                      // Tudo certo, finaliza cadastro!
                       _controller.register(
                         name: _nameEC.text,
                         email: _emailEC.text,
                         password: password,
-                        role: _selectedRole,
+                        role: _selectedRole == 'empresa'
+                            ? 'company'
+                            : 'candidate',
                       );
                     },
-                  ); // Fecha o CustomButton
+                  );
                 },
-              ), // Fecha o ValueListenableBuilder
+              ),
               const SizedBox(height: 32),
             ],
-          ), // Fecha a Column
+          ),
         ),
-      ), // Fecha o SingleChildScrollView
-    ); // Fecha o Scaffold (Aqui sim vai o ponto e vírgula!)
-  } // Fecha o método build
-} // Fecha a classe _RegisterPageState
+      ),
+    );
+  }
+}

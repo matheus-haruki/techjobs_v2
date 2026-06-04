@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:techjobs/core/style/app_colors.dart';
-import 'notifications_page.dart';
+import 'package:techjobs/modules/candidato/model/notification_model.dart';
 
 class NotificationDetailsPage extends StatelessWidget {
-  final NotificationItem notification;
+  final NotificationModel notification;
 
-  const NotificationDetailsPage({super.key, required this.notification});
+  const NotificationDetailsPage({
+    super.key,
+    required this.notification,
+  });
+
+  String _formatDate(DateTime date) {
+    // Retorna algo como "03/06/2026 às 15:30"
+    return DateFormat("dd/MM/yyyy 'às' HH:mm").format(date);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Fundo branco puro para minimalismo
+      backgroundColor: Colors.white, 
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0, // Remove a sombra da barra
-        centerTitle: false, // Força o título da Appbar à esquerda
+        elevation: 0, 
+        centerTitle: false, 
         iconTheme: const IconThemeData(color: AppColors.primary),
         title: Text(
           'Notificação',
           style: GoogleFonts.montserrat(
-            color: Colors.grey.shade400, // Título da AppBar discreto
+            color: Colors.grey.shade400, 
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -30,20 +39,18 @@ class NotificationDetailsPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Tudo alinhado à esquerda
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Linha Superior: Ícone discreto + Data
               Row(
                 children: [
-                  Icon(
-                    notification.icon,
-                    color: notification.iconColor,
+                  const Icon(
+                    Icons.notifications_active, // Ícone genérico padronizado
+                    color: AppColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    notification.timeAgo.toUpperCase(),
+                    _formatDate(notification.createdAt).toUpperCase(),
                     style: GoogleFonts.montserrat(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -54,8 +61,6 @@ class NotificationDetailsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Título Principal em destaque
               Text(
                 notification.title,
                 style: GoogleFonts.montserrat(
@@ -65,26 +70,18 @@ class NotificationDetailsPage extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
-
               const SizedBox(height: 32),
-
-              // Divisor quase invisível
               Divider(color: Colors.grey.shade100, thickness: 1.5),
-
               const SizedBox(height: 32),
-
-              // Texto da descrição limpo, sem card/caixa
               Text(
-                notification.description,
+                notification.message, // Alterado para corresponder ao BD
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
-                  height:
-                      1.8, // Aumenta o espaçamento entre linhas para leitura
+                  height: 1.8, 
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 60),
             ],
           ),

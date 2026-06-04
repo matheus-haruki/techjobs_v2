@@ -1,26 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:techjobs/core/components/custom_app_bar.dart';
 import 'package:techjobs/core/style/app_colors.dart';
-
-class NotificationItem {
-  final String title;
-  final String description;
-  final String timeAgo;
-  final IconData icon;
-  final Color iconColor;
-  final bool isUnread;
-
-  NotificationItem({
-    required this.title,
-    required this.description,
-    required this.timeAgo,
-    required this.icon,
-    required this.iconColor,
-    this.isUnread = false,
-  });
-}
+import 'package:techjobs/core/shared/app_state.dart';
+import 'package:techjobs/modules/candidato/model/notification_model.dart';
+import 'package:techjobs/modules/candidato/controller/notification_controller.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -30,44 +16,22 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      title: 'Entrevista Agendada!',
-      description:
-          'Sua entrevista com a TechCorp S/A foi confirmada para amanhã às 10:00. O link foi enviado por e-mail.',
-      timeAgo: 'Agora',
-      icon: Icons.video_camera_front_rounded,
-      iconColor: Colors.blueAccent,
-      isUnread: true,
-    ),
-    NotificationItem(
-      title: 'Novo Match 🎉',
-      description:
-          'Fintech Bank também curtiu o seu perfil. Envie uma mensagem para iniciar a conversa!',
-      timeAgo: '2 h',
-      icon: Icons.favorite_rounded,
-      iconColor: Colors.green,
-      isUnread: true,
-    ),
-    NotificationItem(
-      title: 'Currículo Visualizado',
-      description:
-          'A empresa StartupX visualizou o seu currículo para a vaga de Dev Mobile Júnior.',
-      timeAgo: 'Ontem',
-      icon: Icons.remove_red_eye_rounded,
-      iconColor: AppColors.secondary,
-      isUnread: false,
-    ),
-    NotificationItem(
-      title: 'Candidatura Finalizada',
-      description:
-          'Infelizmente a empresa AppleBR decidiu seguir com outros candidatos. Não desanime!',
-      timeAgo: '3 d',
-      icon: Icons.cancel_rounded,
-      iconColor: Colors.redAccent,
-      isUnread: false,
-    ),
-  ];
+  late final NotificationController _controller;
+  String? _candidateId;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Modular.get<NotificationController>();
+    _candidateId = Supabase.instance.client.auth.currentUser?.id;
+    _loadNotifications();
+  }
+
+  void _loadNotifications() {
+    if (_candidateId != null) {
+      _controller.loadNotifications(_candidateId!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,58 +45,167 @@ class _NotificationsPageState extends State<NotificationsPage> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
         ),
         clipBehavior: Clip.antiAlias,
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: _notifications.length,
-          // Divisória minimalista e fina entre os itens
-          separatorBuilder: (context, index) => Divider(
-            height: 1,
-            color: Colors.grey.shade200,
-            indent:
-                72, // Alinha a linha divisória com o texto, ignorando o ícone
-            endIndent: 20,
-          ),
-          itemBuilder: (context, index) {
-            final item = _notifications[index];
-            return _buildMinimalistNotification(item);
+        child: ValueListenableBuilder<AppState<List<NotificationModel>>>(
+          valueListenable: _controller,
+          builder: (context, state, child) {
+            if (state is InitialState || state is LoadingState) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
+
+            if (state is ErrorState<List<NotificationModel>>) {
+              return _buildErrorState(state.message);
+            }
+
+            if (state is SuccessState<List<NotificationModel>>) {
+              final notifications = state.data;
+
+              if (notifications.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async => _loadNotifications(),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  itemCount: notifications.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    color: Colors.grey.shade200,
+                    indent: 72,
+                    endIndent: 20,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = notifications[index];
+                    return _NotificationTile(
+                      item: item,
+                      onTap: () {
+                        // Marca como lida no banco (Atualização Otimista)
+                        if (!item.isRead) {
+                          _controller.markAsRead(item.id);
+                        }
+                        
+                        // Direciona para a tela de detalhes
+                        Modular.to.pushNamed(
+                          './notification-details',
+                          arguments: item,
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+            }
+
+            return const SizedBox.shrink();
           },
         ),
       ),
     );
   }
 
-  Widget _buildMinimalistNotification(NotificationItem item) {
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            'Nenhuma notificação',
+            style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Avisaremos quando houver novidades.',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+          const SizedBox(height: 16),
+          Text(
+            'Falha ao carregar',
+            style: GoogleFonts.montserrat(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textTitle,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(message, style: GoogleFonts.montserrat(color: Colors.grey.shade600)),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadNotifications,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Tentar Novamente'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationTile extends StatelessWidget {
+  final NotificationModel item;
+  final VoidCallback onTap;
+
+  const _NotificationTile({
+    required this.item,
+    required this.onTap,
+  });
+
+  String _formatTimeAgo(DateTime date) {
+    final difference = DateTime.now().difference(date);
+    if (difference.inMinutes < 60) return 'Agora';
+    if (difference.inHours < 24) return '${difference.inHours} h';
+    if (difference.inDays == 1) return 'Ontem';
+    return '${difference.inDays} d';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        // Envia o usuário para a tela de detalhes, passando o objeto 'item'
-        Modular.to.pushNamed('./notification-details', arguments: item);
-      },
+      onTap: onTap,
       child: Container(
-        // Fundo levemente colorido APENAS se não estiver lido
-        color: item.isUnread
-            ? AppColors.primary.withValues(alpha:0.02)
-            : Colors.transparent,
+        color: item.isRead ? Colors.transparent : AppColors.primary.withValues(alpha: 0.05),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ícone sem fundo (Fica cinza se a notificação já foi lida)
             Padding(
               padding: const EdgeInsets.only(top: 2.0),
               child: Icon(
-                item.icon,
+                item.isRead ? Icons.notifications_none : Icons.notifications_active,
                 size: 24,
-                color: item.isUnread ? item.iconColor : Colors.grey.shade400,
+                color: item.isRead ? Colors.grey.shade400 : AppColors.primary,
               ),
             ),
             const SizedBox(width: 16),
-
-            // Conteúdo
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Linha do Título e Tempo
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -142,30 +215,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           item.title,
                           style: GoogleFonts.montserrat(
                             fontSize: 14,
-                            // Título perde o peso se já foi lido
-                            fontWeight: item.isUnread
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                            color: item.isUnread
-                                ? AppColors.textTitle
-                                : Colors.grey.shade700,
+                            fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
+                            color: item.isRead ? Colors.grey.shade700 : AppColors.textTitle,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Tempo movido para cima
                       Text(
-                        item.timeAgo,
+                        _formatTimeAgo(item.createdAt),
                         style: GoogleFonts.montserrat(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade400,
+                          color: Colors.grey.shade500,
                         ),
                       ),
-                      // Bolinha indicadora
-                      if (item.isUnread) ...[
+                      if (!item.isRead) ...[
                         const SizedBox(width: 8),
                         Container(
                           height: 8,
@@ -179,19 +245,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ],
                   ),
                   const SizedBox(height: 6),
-
-                  // Descrição
                   Text(
-                    item.description,
+                    item.message,
                     style: GoogleFonts.montserrat(
                       fontSize: 13,
-                      color: item.isUnread
-                          ? Colors.grey.shade700
-                          : Colors.grey.shade500,
+                      color: item.isRead ? Colors.grey.shade500 : Colors.grey.shade700,
                       height: 1.4,
                     ),
-                    maxLines:
-                        2, // Limita a duas linhas para manter o minimalismo na listagem
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],

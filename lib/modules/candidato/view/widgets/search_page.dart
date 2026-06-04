@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:flutter/material.dart' hide SearchController;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:techjobs/core/components/custom_app_bar.dart';
 import 'package:techjobs/core/style/app_colors.dart';
+import 'package:techjobs/core/shared/app_state.dart';
 import 'package:techjobs/modules/candidato/model/job_model.dart';
+import 'package:techjobs/modules/candidato/controller/search_controller.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class SearchPage extends StatefulWidget {
@@ -13,53 +17,56 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final TextEditingController _searchController = TextEditingController();
-  int _selectedFilterIndex = 0; // Para controlar qual tag de filtro está ativa
-
-  // Lista de filtros rápidos
-  final List<String> _filters = [
-    'Todas',
-    'Remoto',
-    'Júnior',
-    'Pleno',
-    'Sênior',
-    'Exterior',
-  ];
-
-  // Aproveitando os mesmos dados (Mock) para não termos que recriar
-  final List<JobModel> _mockJobs = [
-    JobModel(
-      id: '1',
-      title: 'Desenvolvedor(a) Flutter Pleno',
-      company: 'TechCorp S/A',
-      location: 'Remoto',
-      salary: 'R\$ 6.000 - R\$ 8.000',
-      tags: ['Flutter', 'Dart', 'Firebase'],
-      description: 'Buscamos uma pessoa desenvolvedora...',
-    ),
-    JobModel(
-      id: '2',
-      title: 'Engenheiro iOS Senior',
-      company: 'AppleBR',
-      location: 'São Paulo, SP',
-      salary: 'R\$ 12.000 - R\$ 16.000',
-      tags: ['Swift', 'Objective-C', 'Viper'],
-      description: 'Venha liderar tecnicamente...',
-    ),
-    JobModel(
-      id: '3',
-      title: 'Dev Mobile Júnior (Flutter)',
-      company: 'StartupX',
-      location: 'Híbrido - Curitiba',
-      salary: 'R\$ 3.500 - R\$ 4.500',
-      tags: ['Flutter', 'Git', 'API Rest'],
-      description: 'Ótima oportunidade para quem quer crescer...',
-    ),
+  final TextEditingController _searchControllerInput = TextEditingController();
+  late final SearchController _controller;
+  Timer? _debounce;
+  
+  int _selectedFilterIndex = 0;
+  
+  // Mapeamento dos filtros para o enum WorkModel. 
+  // 'Todas' enviará um filtro nulo para a query.
+  final List<Map<String, WorkModel?>> _filters = [
+    {'Todas': null},
+    {'Presencial': WorkModel.presencial},
+    {'Remoto': WorkModel.remoto},
+    {'Híbrido': WorkModel.hibrido},
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _controller = Modular.get<SearchController>();
+    
+    // Dispara a busca inicial vazia (traz todas as vagas)
+    _performSearch();
+  }
+
+  void _performSearch() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final keyword = _searchControllerInput.text;
+    final activeFilter = _filters[_selectedFilterIndex].values.first;
+
+    _controller.searchJobs(
+      candidateId: userId,
+      keyword: keyword,
+      workModelFilter: activeFilter,
+    );
+  }
+
+  // Técnica de Debounce para evitar sobrecarga de chamadas ao banco enquanto o usuário digita
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _performSearch();
+    });
+  }
+
+  @override
   void dispose() {
-    _searchController.dispose();
+    _searchControllerInput.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -83,7 +90,8 @@ class _SearchPageState extends State<SearchPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: TextField(
-                controller: _searchController,
+                controller: _searchControllerInput,
+                onChanged: _onSearchChanged, // Dispara a busca inteligente
                 decoration: InputDecoration(
                   hintText: 'Ex: Desenvolvedor Flutter...',
                   hintStyle: GoogleFonts.montserrat(color: Colors.grey),
@@ -110,7 +118,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
 
-            // 2. Filtros Rápidos (Scroll Horizontal)
+            // 2. Filtros Rápidos
             SizedBox(
               height: 40,
               child: ListView.builder(
@@ -119,6 +127,7 @@ class _SearchPageState extends State<SearchPage> {
                 itemCount: _filters.length,
                 itemBuilder: (context, index) {
                   final isSelected = _selectedFilterIndex == index;
+                  final filterName = _filters[index].keys.first;
                   return Padding(
                     padding: const EdgeInsets.only(right: 12.0),
                     child: GestureDetector(
@@ -126,6 +135,7 @@ class _SearchPageState extends State<SearchPage> {
                         setState(() {
                           _selectedFilterIndex = index;
                         });
+                        _performSearch(); // Refaz a busca ao trocar de filtro
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -140,7 +150,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                         child: Text(
-                          _filters[index],
+                          filterName,
                           style: GoogleFonts.montserrat(
                             color: isSelected
                                 ? Colors.white
@@ -159,16 +169,46 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
 
-            // 3. Lista de Resultados
+            // 3. Lista de Resultados Reativa
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(20),
-                itemCount: _mockJobs.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final job = _mockJobs[index];
-                  return _buildCompactJobCard(job);
+              child: ValueListenableBuilder<AppState<List<JobModel>>>(
+                valueListenable: _controller,
+                builder: (context, state, child) {
+                  if (state is LoadingState<List<JobModel>> || state is InitialState<List<JobModel>>) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    );
+                  }
+
+                  if (state is ErrorState<List<JobModel>>) {
+                    return Center(
+                      child: Text(
+                        'Erro ao carregar vagas:\n${state.message}',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+
+                  if (state is SuccessState<List<JobModel>>) {
+                    final jobs = state.data;
+
+                    if (jobs.isEmpty) {
+                      return const Center(
+                        child: Text('Nenhuma vaga encontrada.'),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: jobs.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        return _buildCompactJobCard(jobs[index]);
+                      },
+                    );
+                  }
+
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -178,106 +218,127 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // Componente para desenhar o Card Compacto na lista
-  // Componente para desenhar o Card Compacto na lista
   Widget _buildCompactJobCard(JobModel job) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => Modular.to.pushNamed(
-            './job-details',
-            arguments: job,
-          ), // Ação de clique chamando a rota
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo da Empresa
-                Container(
-                  height: 50,
-                  width: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.business, color: AppColors.secondary),
-                ),
-                const SizedBox(width: 16),
-
-                // Detalhes da Vaga
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        job.title,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textTitle,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Modular.to.pushNamed(
+                './job-details',
+                arguments: job,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        job.company,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
+                      child: const Icon(Icons.business, color: AppColors.secondary),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              job.location,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            job.title,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textTitle,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            job.company,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  job.location != null 
+                                      ? '${job.workModel.name} • ${job.location}'
+                                      : job.workModel.name,
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8.0),
+                      child: Icon(Icons.chevron_right, color: Colors.grey),
+                    ),
+                  ],
                 ),
-
-                // Ícone de "Ver detalhes"
-                const Padding(
-                  padding: EdgeInsets.only(top: 8.0),
-                  child: Icon(Icons.chevron_right, color: Colors.grey),
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        
+        // 4. Tag de Inscrito Baseada no Banco de Dados
+        if (job.isSubscribed)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Inscrito',
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

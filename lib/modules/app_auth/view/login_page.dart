@@ -31,13 +31,20 @@ class _LoginPageState extends State<LoginPage> {
     final state = _controller.value;
 
     if (state is SuccessState<UserModel>) {
-      // Quando o módulo do feed estiver pronto, usaremos: Modular.to.navigate('/candidate/');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Sucesso! Logado como: ${state.data.name}'),
+          content: Text('Bem-vindo(a) de volta!'),
           backgroundColor: Colors.green,
         ),
       );
+
+      // MÁGICA AQUI: Navegação dinâmica baseada na role!
+      if (state.data.role == 'company') {
+        Modular.to.navigate('/company/');
+      } else {
+        Modular.to.navigate('/candidate/');
+      }
+      
     } else if (state is ErrorState<UserModel>) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(state.message), backgroundColor: Colors.red),
@@ -56,9 +63,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF8F9FA,
-      ), // Cor de fundo levemente acinzentada
+      backgroundColor: const Color(0xFFF8F9FA), // Cor de fundo levemente acinzentada
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -88,8 +93,7 @@ class _LoginPageState extends State<LoginPage> {
                 label: 'Senha:',
                 hintText: 'Digite sua senha',
                 controller: _passwordEC,
-                isPassword:
-                    true, // Isso automaticamente liga o "olhinho" de ocultar/mostrar
+                isPassword: true, // Isso automaticamente liga o "olhinho" de ocultar/mostrar
               ),
 
               Align(
@@ -113,8 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                   return CustomButton(
                     title: 'Entrar',
                     isLoading: isLoading,
-                    onPressed: () =>
-                        _controller.login(_emailEC.text, _passwordEC.text),
+                    onPressed: () => _controller.login(_emailEC.text, _passwordEC.text),
                   );
                 },
               ),

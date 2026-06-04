@@ -33,6 +33,7 @@ class JobDetailsPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: 30),
               // 1. Cabeçalho (Logo, Título e Empresa)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,10 +42,10 @@ class JobDetailsPage extends StatelessWidget {
                     height: 70,
                     width: 70,
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha:0.1),
+                      color: AppColors.secondary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.secondary.withValues(alpha:0.3),
+                        color: AppColors.secondary.withValues(alpha: 0.3),
                       ),
                     ),
                     child: const Icon(
@@ -89,7 +90,7 @@ class JobDetailsPage extends StatelessWidget {
                   Expanded(
                     child: _buildInfoCard(
                       Icons.location_on_outlined,
-                      job.location,
+                      job.location ?? 'Remoto',
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -127,54 +128,24 @@ class JobDetailsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                job.description,
-                style: GoogleFonts.montserrat(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: Colors.grey.shade700,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Text(
+                  job.description,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-
-      // 5. Barra Inferior Fixa com Botão de Ação
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha:0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: ElevatedButton(
-            onPressed: () {
-              // Futura lógica de curtir/candidatar
-              Navigator.pop(context); // Exemplo: Fecha a tela após a ação
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Quero me candidatar',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
           ),
         ),
       ),
@@ -186,9 +157,9 @@ class JobDetailsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha:0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha:0.1)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Text(
         text,

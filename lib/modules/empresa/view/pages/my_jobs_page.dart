@@ -128,8 +128,6 @@ class _MyJobsPageState extends State<MyJobsPage> {
   }
 
   Widget _buildJobDashboardCard(JobModel job) {
-    
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -201,7 +199,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                job.location ?? 'Não informado',
+                job.location ?? 'Remoto',
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   color: Colors.grey.shade600,

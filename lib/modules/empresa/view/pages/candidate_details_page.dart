@@ -340,7 +340,7 @@ class _CandidateDetailsPageState extends State<CandidateDetailsPage> {
                       }
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.secondaryDark,
                 minimumSize: const Size.fromHeight(56),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

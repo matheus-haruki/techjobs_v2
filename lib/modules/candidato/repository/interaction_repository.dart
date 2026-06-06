@@ -4,9 +4,13 @@ import 'package:techjobs/modules/candidato/model/interaction_model.dart';
 
 abstract class IInteractionRepository {
   Future<void> registerInteraction(InteractionModel interaction);
-  
+
   Future<InteractionModel?> getInteraction(String candidateId, String jobId);
-  Future<void> scheduleInterview(String candidateId, String jobId, DateTime date);
+  Future<void> scheduleInterview(
+    String candidateId,
+    String jobId,
+    DateTime date,
+  );
 }
 
 class InteractionRepositorySupabase implements IInteractionRepository {
@@ -15,7 +19,11 @@ class InteractionRepositorySupabase implements IInteractionRepository {
   @override
   Future<void> registerInteraction(InteractionModel interaction) async {
     try {
-      await supabase.from('interactions').insert(interaction.toMap());
+      // O upsert tentará inserir os dados. Se a constraint única (candidate_id, job_id)
+      // for violada, ele automaticamente atualizará a linha existente em vez de falhar.
+      await supabase
+          .from('interactions')
+          .upsert(interaction.toMap(), onConflict: 'candidate_id, job_id');
     } catch (e) {
       debugPrint('🔴 ERRO AO REGISTRAR INTERAÇÃO: $e');
       throw Exception('Não foi possível registrar a sua ação.');
@@ -23,7 +31,10 @@ class InteractionRepositorySupabase implements IInteractionRepository {
   }
 
   @override
-  Future<InteractionModel?> getInteraction(String candidateId, String jobId) async {
+  Future<InteractionModel?> getInteraction(
+    String candidateId,
+    String jobId,
+  ) async {
     try {
       final response = await supabase
           .from('interactions')
@@ -33,7 +44,7 @@ class InteractionRepositorySupabase implements IInteractionRepository {
           .maybeSingle(); // Retorna 1 registo ou null
 
       if (response == null) return null;
-      
+
       return InteractionModel.fromMap(response);
     } catch (e) {
       debugPrint('🔴 ERRO AO BUSCAR INTERAÇÃO: $e');
@@ -42,7 +53,11 @@ class InteractionRepositorySupabase implements IInteractionRepository {
   }
 
   @override
-  Future<void> scheduleInterview(String candidateId, String jobId, DateTime date) async {
+  Future<void> scheduleInterview(
+    String candidateId,
+    String jobId,
+    DateTime date,
+  ) async {
     try {
       await supabase
           .from('interactions')

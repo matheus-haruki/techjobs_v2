@@ -379,11 +379,27 @@ class _ManageJobPageState extends State<ManageJobPage> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Fecha o dialog
-                Modular.to.pop(
-                  true,
-                ); // Retorna true para dar trigger no SnackBar de exclusão
+              onPressed: () async {
+                try {
+                  // 1. Mostra um indicador de carregamento no próprio botão ou apenas aguarda
+                  await _controller.deleteJob(widget.job.id);
+                  
+                  // 2. Verifica se a tela ainda está montada antes de usar o context
+                  if (context.mounted) {
+                    Navigator.pop(context); // Fecha o dialog
+                    Modular.to.pop(true);   // Volta para a lista avisando que deletou
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context); // Fecha o dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erro ao excluir: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,

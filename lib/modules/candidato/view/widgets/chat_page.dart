@@ -46,25 +46,30 @@ class _ChatPageState extends State<ChatPage> {
   List<ChatMessage> _buildChatHistory(DateTime? scheduledDate) {
     final messages = [
       ChatMessage(
-        text: 'Olá! Gostamos muito do seu perfil para a vaga de ${widget.job.title}. Vamos agendar um bate-papo inicial?',
+        text:
+            'Olá! Gostamos muito do seu perfil para a vaga de ${widget.job.title}. Vamos agendar um bate-papo inicial?',
         isFromCompany: true,
       ),
     ];
 
     // Se houver uma data agendada na base de dados, adicionamos as mensagens de confirmação
     if (scheduledDate != null) {
-      final formattedDate = DateFormat('dd/MM/yyyy, HH:mm').format(scheduledDate);
-      
+      final formattedDate = DateFormat(
+        'dd/MM/yyyy, HH:mm',
+      ).format(scheduledDate);
+
       messages.add(
         ChatMessage(
-          text: 'Podemos conversar no dia $formattedDate. Fico no aguardo do link!',
+          text:
+              'Podemos conversar no dia $formattedDate. Fico no aguardo do link!',
           isFromCompany: false,
         ),
       );
-      
+
       messages.add(
         ChatMessage(
-          text: 'Perfeito! O convite foi enviado para o seu e-mail e adicionado às suas Notificações. Até lá!',
+          text:
+              'Perfeito! O convite foi enviado para o seu e-mail e adicionado às suas Notificações. Até lá!',
           isFromCompany: true,
         ),
       );
@@ -96,12 +101,22 @@ class _ChatPageState extends State<ChatPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     CupertinoButton(
-                      child: Text('Cancelar', style: GoogleFonts.montserrat(color: Colors.redAccent)),
+                      child: Text(
+                        'Cancelar',
+                        style: GoogleFonts.montserrat(color: Colors.redAccent),
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     CupertinoButton(
-                      child: Text('Concluir', style: GoogleFonts.montserrat(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                      onPressed: () => Navigator.of(context).pop(tempPickedDate),
+                      child: Text(
+                        'Concluir',
+                        style: GoogleFonts.montserrat(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () =>
+                          Navigator.of(context).pop(tempPickedDate),
                     ),
                   ],
                 ),
@@ -151,7 +166,11 @@ class _ChatPageState extends State<ChatPage> {
                 color: AppColors.secondary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(50),
               ),
-              child: const Icon(Icons.business, color: AppColors.secondary, size: 20),
+              child: const Icon(
+                Icons.business,
+                color: AppColors.secondary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -159,12 +178,20 @@ class _ChatPageState extends State<ChatPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.job.company,
-                    style: GoogleFonts.montserrat(color: AppColors.textTitle, fontSize: 16, fontWeight: FontWeight.bold),
+                    widget.job.companyName ?? 'Empresa Confidencial',
+                    style: GoogleFonts.montserrat(
+                      color: AppColors.textTitle,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     'Recrutador(a)',
-                    style: GoogleFonts.montserrat(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.montserrat(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -178,7 +205,9 @@ class _ChatPageState extends State<ChatPage> {
         builder: (context, state, child) {
           // ESTADO 1: Carregando os dados da base de dados
           if (state is InitialState || state is LoadingState) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           // ESTADO 2: Erro de conexão
@@ -231,13 +260,22 @@ class _ChatPageState extends State<ChatPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               elevation: 0,
                             ),
-                            icon: const Icon(Icons.calendar_month, color: Colors.white),
+                            icon: const Icon(
+                              Icons.calendar_month,
+                              color: Colors.white,
+                            ),
                             label: Text(
                               'Escolher Data e Hora',
-                              style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: GoogleFonts.montserrat(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           )
                         : Container(
@@ -250,11 +288,18 @@ class _ChatPageState extends State<ChatPage> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.check_circle, color: Colors.green),
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Entrevista Agendada',
-                                  style: GoogleFonts.montserrat(color: Colors.green.shade700, fontSize: 15, fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.green.shade700,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -273,7 +318,9 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildChatBubble(ChatMessage message) {
     return Align(
-      alignment: message.isFromCompany ? Alignment.centerLeft : Alignment.centerRight,
+      alignment: message.isFromCompany
+          ? Alignment.centerLeft
+          : Alignment.centerRight,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

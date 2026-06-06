@@ -6,20 +6,25 @@ enum WorkModel {
 
 class JobModel {
   final String id;
+  final String? companyId;
   final String title;
-  final String company;
-  final WorkModel workModel; // <-- Novo campo para o Modelo
-  final String? location;    // <-- Transformado em String? (pode ser nulo se for remoto)
+  final String? companyName; // Modificado para receber do JOIN
+  final String? companyAvatarUrl; // Adicionado para manter simetria com a View
+  final WorkModel workModel;
+  final String? location;    
   final String salary;
   final List<String> tags;
   final String description;
   final bool isSubscribed;
   final DateTime? scheduledAt;
 
-  JobModel({
+  // Transformado em construtor constante (Performance)
+  const JobModel({
     required this.id,
+    this.companyId,
     required this.title,
-    required this.company,
+    this.companyName,
+    this.companyAvatarUrl,
     required this.workModel,
     this.location,
     required this.salary,
@@ -29,12 +34,16 @@ class JobModel {
     this.scheduledAt,
   });
 
-  // Converte o JSON do Supabase em Objeto Dart
   factory JobModel.fromMap(Map<String, dynamic> map) {
+    // Fail-safe para o JOIN relacional
+    final companyData = map['companies'] as Map<String, dynamic>?;
+
     return JobModel(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
-      company: map['company_name'] ?? '',
+      companyId: map['company_id'] as String?,
+      companyName: companyData?['name'] as String?,
+      companyAvatarUrl: companyData?['avatar_url'] as String?,
       workModel: WorkModel.values.firstWhere(
         (e) => e.name == map['work_model'],
         orElse: () => WorkModel.presencial,
@@ -48,12 +57,11 @@ class JobModel {
     );
   }
 
-  // Converte o Objeto Dart em JSON para o Supabase
   Map<String, dynamic> toMap() {
     return {
       if (id.isNotEmpty) 'id': id,
       'title': title,
-      'company_name': company,
+      // 'company_name' removido estritamente para não quebrar inserts caso o model seja reaproveitado.
       'work_model': workModel.name,
       'location': location,
       'salary_range': salary,

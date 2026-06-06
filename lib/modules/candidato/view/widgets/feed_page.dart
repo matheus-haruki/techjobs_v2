@@ -193,11 +193,32 @@ class _FeedPageState extends State<FeedPage> {
                     height: 60,
                     width: 60,
                     decoration: BoxDecoration(
-                      color: AppColors.secondary,
+                      color: AppColors.secondary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  const SizedBox(width: 16),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: job.companyAvatarUrl != null && job.companyAvatarUrl!.isNotEmpty
+                          ? Image.network(
+                              job.companyAvatarUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.business, color: AppColors.secondary),
+                            )
+                          : Center(
+                              child: Text(
+                                job.companyName != null && job.companyName!.isNotEmpty
+                                    ? job.companyName![0].toUpperCase()
+                                    : '?',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ), const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

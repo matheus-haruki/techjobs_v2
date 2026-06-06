@@ -23,8 +23,6 @@ class _SearchPageState extends State<SearchPage> {
   
   int _selectedFilterIndex = 0;
   
-  // Mapeamento dos filtros para o enum WorkModel. 
-  // 'Todas' enviará um filtro nulo para a query.
   final List<Map<String, WorkModel?>> _filters = [
     {'Todas': null},
     {'Presencial': WorkModel.presencial},
@@ -36,8 +34,6 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     _controller = Modular.get<SearchController>();
-    
-    // Dispara a busca inicial vazia (traz todas as vagas)
     _performSearch();
   }
 
@@ -55,7 +51,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // Técnica de Debounce para evitar sobrecarga de chamadas ao banco enquanto o usuário digita
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -85,13 +80,11 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-
-            // 1. Barra de Pesquisa
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: TextField(
                 controller: _searchControllerInput,
-                onChanged: _onSearchChanged, // Dispara a busca inteligente
+                onChanged: _onSearchChanged,
                 decoration: InputDecoration(
                   hintText: 'Ex: Desenvolvedor Flutter...',
                   hintStyle: GoogleFonts.montserrat(color: Colors.grey),
@@ -117,8 +110,6 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // 2. Filtros Rápidos
             SizedBox(
               height: 40,
               child: ListView.builder(
@@ -135,7 +126,7 @@ class _SearchPageState extends State<SearchPage> {
                         setState(() {
                           _selectedFilterIndex = index;
                         });
-                        _performSearch(); // Refaz a busca ao trocar de filtro
+                        _performSearch();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -168,8 +159,6 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // 3. Lista de Resultados Reativa
             Expanded(
               child: ValueListenableBuilder<AppState<List<JobModel>>>(
                 valueListenable: _controller,
@@ -253,7 +242,28 @@ class _SearchPageState extends State<SearchPage> {
                         color: AppColors.secondary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.business, color: AppColors.secondary),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: job.companyAvatarUrl != null && job.companyAvatarUrl!.isNotEmpty
+                            ? Image.network(
+                                job.companyAvatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.business, color: AppColors.secondary),
+                              )
+                            : Center(
+                                child: Text(
+                                  job.companyName != null && job.companyName!.isNotEmpty
+                                      ? job.companyName![0].toUpperCase()
+                                      : '?',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 20, // Fonte ajustada proporcionalmente ao container de 50x50
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.secondary,
+                                  ),
+                                ),
+                              ),
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -272,7 +282,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            job.company,
+                            job.companyName ?? 'Empresa Confidencial',
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               color: Colors.grey.shade600,
@@ -317,7 +327,6 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
         
-        // 4. Tag de Inscrito Baseada no Banco de Dados
         if (job.isSubscribed)
           Positioned(
             top: 12,

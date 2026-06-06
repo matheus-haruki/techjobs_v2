@@ -21,6 +21,7 @@ import 'package:techjobs/modules/empresa/repository/notification_repository.dart
 
 // --- USECASES ---
 import 'package:techjobs/modules/empresa/usecase/create_job_usecase.dart';
+import 'package:techjobs/modules/empresa/usecase/delete_job_usecase.dart';
 import 'package:techjobs/modules/empresa/usecase/get_company_profile_usecase.dart';
 import 'package:techjobs/modules/empresa/usecase/get_job_interactions_usecase.dart';
 import 'package:techjobs/modules/empresa/usecase/get_my_jobs_usecase.dart';
@@ -67,6 +68,7 @@ class CompanyModule extends Module {
     i.add<IGetJobInteractionsUseCase>(GetJobInteractionsUseCase.new);
     i.add<IGetNotificationsUseCase>(GetNotificationsUseCase.new);
     i.add<IMarkNotificationAsReadUseCase>(MarkNotificationAsReadUseCase.new);
+    i.add<IDeleteJobUseCase>(DeleteJobUseCase.new);
 
     // Controllers
     i.addLazySingleton(CompanyProfileController.new);

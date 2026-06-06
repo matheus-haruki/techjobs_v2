@@ -224,7 +224,7 @@ class _MatchCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      job.company,
+                      job.companyName?? 'Empresa Confidencial',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         color: Colors.grey.shade600,

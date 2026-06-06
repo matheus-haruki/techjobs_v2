@@ -57,7 +57,7 @@ class JobModel {
       'title': title,
       'description': description,
       'work_model': workModel.name,
-      'location': location,
+      'location': workModel == WorkModel.remoto ? null : location,
       'salary_range': salary,
       'tags': tags,
       'is_active': isActive,

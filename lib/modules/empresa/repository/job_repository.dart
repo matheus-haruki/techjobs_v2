@@ -4,6 +4,7 @@ import 'package:techjobs/modules/empresa/model/job_model.dart';
 abstract class IJobRepository {
   Future<void> createJob(JobModel job);
   Future<List<JobModel>> getJobsByCompanyId(String companyId);
+  Future<void> deleteJob(String jobId); // <-- NOVA ASSINATURA AQUI
 }
 
 class JobRepositorySupabase implements IJobRepository {
@@ -44,6 +45,16 @@ class JobRepositorySupabase implements IJobRepository {
       }).toList();
     } catch (e) {
       throw Exception('Falha ao buscar as vagas.');
+    }
+  }
+
+  // --- NOVO MÉTODO DE EXCLUSÃO IMPLEMENTADO AQUI ---
+  @override
+  Future<void> deleteJob(String jobId) async {
+    try {
+      await _client.from('jobs').delete().eq('id', jobId);
+    } catch (e) {
+      throw Exception('Falha ao excluir a vaga: $e');
     }
   }
 }

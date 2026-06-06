@@ -16,6 +16,7 @@ class JobModel {
   final List<String> tags;
   final String description;
   final bool isSubscribed;
+  final bool isMatch;
   final DateTime? scheduledAt;
 
   // Transformado em construtor constante (Performance)
@@ -31,6 +32,7 @@ class JobModel {
     required this.tags,
     required this.description,
     this.isSubscribed = false,
+    this.isMatch = false,
     this.scheduledAt,
   });
 
@@ -53,6 +55,7 @@ class JobModel {
       tags: List<String>.from(map['tags'] ?? []),
       description: map['description'] ?? '',
       isSubscribed: map['is_subscribed'] ?? false,
+      isMatch: map['is_match'] ?? false, 
       scheduledAt: map['scheduled_at'] != null ? DateTime.parse(map['scheduled_at']) : null, 
     );
   }

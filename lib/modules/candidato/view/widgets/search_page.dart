@@ -212,6 +212,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildCompactJobCard(JobModel job) {
+    final statusTag = _buildStatusTag(job);
+
     return Stack(
       children: [
         Container(
@@ -268,8 +270,7 @@ class _SearchPageState extends State<SearchPage> {
                                       ? job.companyName![0].toUpperCase()
                                       : '?',
                                   style: GoogleFonts.montserrat(
-                                    fontSize:
-                                        20, // Fonte ajustada proporcionalmente ao container de 50x50
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.secondary,
                                   ),
@@ -323,44 +324,81 @@ class _SearchPageState extends State<SearchPage> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Icon(Icons.chevron_right, color: Colors.grey),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: Colors.grey,
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    // const Padding(
-                    //   padding: EdgeInsets.only(top: 35.0),
-                    //   child: Icon(Icons.chevron_right, color: Colors.grey),
-                    // ),
                   ],
                 ),
               ),
             ),
           ),
         ),
+        if (statusTag != null) statusTag,
+      ],
+    );
+  }
 
-        if (job.isSubscribed)
-          Positioned(
-            top: 18,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Inscrito',
+  /// Constrói a tag visual baseada no status de interação da vaga.
+  /// Retorna nulo se o candidato ainda não interagiu com a vaga.
+  Widget? _buildStatusTag(JobModel job) {
+    if (job.isMatch) {
+      return Positioned(
+        top: 18,
+        right: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.amber.shade300, width: 0.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded, size: 12, color: Colors.amber.shade900),
+              const SizedBox(width: 4),
+              Text(
+                'Match',
                 style: GoogleFonts.montserrat(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green.shade800,
+                  color: Colors.amber.shade900,
                 ),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (job.isSubscribed) {
+      return Positioned(
+        top: 18,
+        right: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Inscrito',
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade800,
             ),
           ),
-      ],
-    );
+        ),
+      );
+    }
+
+    return null;
   }
 }

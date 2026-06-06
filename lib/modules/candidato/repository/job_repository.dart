@@ -5,7 +5,7 @@ import 'package:techjobs/modules/candidato/model/interaction_model.dart';
 
 abstract class IJobRepository {
   Future<List<JobModel>> getUnseenJobs(String candidateId);
-  
+
   Future<List<JobModel>> getJobsByCompanyId({
     required String companyId,
     required String candidateId,
@@ -31,7 +31,7 @@ class JobRepositorySupabase implements IJobRepository {
     try {
       final interactionsResponse = await supabase
           .from('interactions')
-          .select('job_id')
+          .select('job_id, status')
           .eq('candidate_id', candidateId);
 
       final interactedJobIds = interactionsResponse
@@ -60,18 +60,21 @@ class JobRepositorySupabase implements IJobRepository {
     WorkModel? workModelFilter,
   }) async {
     try {
+      // 1. Busca interações trazendo o status
       final interactionsRes = await supabase
           .from('interactions')
-          .select('job_id')
+          .select('job_id, status') // Adicionamos a coluna status
           .eq('candidate_id', candidateId)
           .inFilter('status', [
             InteractionStatus.like.name,
             InteractionStatus.match.name,
           ]);
 
-      final subscribedJobIds = interactionsRes
-          .map((i) => i['job_id'] as String)
-          .toSet();
+      // 2. Mapeia o status exato de cada vaga
+      final interactionStatusMap = <String, String>{};
+      for (final i in interactionsRes) {
+        interactionStatusMap[i['job_id'] as String] = i['status'] as String;
+      }
 
       var query = supabase.from('jobs').select(_selectQuery);
 
@@ -87,7 +90,11 @@ class JobRepositorySupabase implements IJobRepository {
 
       return response.map((map) {
         final jobId = map['id'] as String;
-        map['is_subscribed'] = subscribedJobIds.contains(jobId);
+        final status = interactionStatusMap[jobId];
+
+        // 3. Injeta as duas flags separadamente
+        map['is_subscribed'] = status != null; // Se tem like ou match, está inscrito
+        map['is_match'] = status == InteractionStatus.match.name; // Somente se for match
 
         return JobModel.fromMap(map);
       }).toList();
@@ -129,6 +136,7 @@ class JobRepositorySupabase implements IJobRepository {
         final jobId = map['id'] as String;
 
         map['is_subscribed'] = true;
+        map['is_match'] = true; // Explicita que é match
         map['scheduled_at'] = matchData[jobId];
 
         return JobModel.fromMap(map);
@@ -145,32 +153,36 @@ class JobRepositorySupabase implements IJobRepository {
     required String candidateId,
   }) async {
     try {
-      // 1. Busca interações prévias do candidato (like ou match)
+      // 1. Busca interações trazendo o status
       final interactionsRes = await supabase
           .from('interactions')
-          .select('job_id')
+          .select('job_id, status')
           .eq('candidate_id', candidateId)
           .inFilter('status', [
             InteractionStatus.like.name,
             InteractionStatus.match.name,
           ]);
 
-      // Converter para Set garante complexidade O(1) na verificação de existência
-      final subscribedJobIds = interactionsRes
-          .map((i) => i['job_id'] as String)
-          .toSet();
+      // 2. Mapeia o status exato de cada vaga
+      final interactionStatusMap = <String, String>{};
+      for (final i in interactionsRes) {
+        interactionStatusMap[i['job_id'] as String] = i['status'] as String;
+      }
 
-      // 2. Busca as vagas específicas da empresa
+      // 3. Busca as vagas específicas da empresa
       final response = await supabase
           .from('jobs')
           .select(_selectQuery)
           .eq('company_id', companyId)
           .order('created_at', ascending: false);
 
-      // 3. Injeta a flag de inscrição baseada no cruzamento de dados
+      // 4. Injeta as flags de inscrição e match baseadas no cruzamento de dados
       return response.map((map) {
         final jobId = map['id'] as String;
-        map['is_subscribed'] = subscribedJobIds.contains(jobId);
+        final status = interactionStatusMap[jobId];
+
+        map['is_subscribed'] = status != null; // Se tem like ou match, está inscrito
+        map['is_match'] = status == InteractionStatus.match.name; // Somente se for match
 
         return JobModel.fromMap(map);
       }).toList();

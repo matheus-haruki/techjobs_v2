@@ -20,9 +20,9 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchControllerInput = TextEditingController();
   late final SearchController _controller;
   Timer? _debounce;
-  
+
   int _selectedFilterIndex = 0;
-  
+
   final List<Map<String, WorkModel?>> _filters = [
     {'Todas': null},
     {'Presencial': WorkModel.presencial},
@@ -163,9 +163,12 @@ class _SearchPageState extends State<SearchPage> {
               child: ValueListenableBuilder<AppState<List<JobModel>>>(
                 valueListenable: _controller,
                 builder: (context, state, child) {
-                  if (state is LoadingState<List<JobModel>> || state is InitialState<List<JobModel>>) {
+                  if (state is LoadingState<List<JobModel>> ||
+                      state is InitialState<List<JobModel>>) {
                     return const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
                     );
                   }
 
@@ -190,7 +193,8 @@ class _SearchPageState extends State<SearchPage> {
                     return ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: jobs.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         return _buildCompactJobCard(jobs[index]);
                       },
@@ -226,12 +230,13 @@ class _SearchPageState extends State<SearchPage> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => Modular.to.pushNamed(
-                './job-details',
-                arguments: job,
-              ),
+              onTap: () =>
+                  Modular.to.pushNamed('./job-details', arguments: job),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -244,20 +249,27 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: job.companyAvatarUrl != null && job.companyAvatarUrl!.isNotEmpty
+                        child:
+                            job.companyAvatarUrl != null &&
+                                job.companyAvatarUrl!.isNotEmpty
                             ? Image.network(
                                 job.companyAvatarUrl!,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.business, color: AppColors.secondary),
+                                    const Icon(
+                                      Icons.business,
+                                      color: AppColors.secondary,
+                                    ),
                               )
                             : Center(
                                 child: Text(
-                                  job.companyName != null && job.companyName!.isNotEmpty
+                                  job.companyName != null &&
+                                          job.companyName!.isNotEmpty
                                       ? job.companyName![0].toUpperCase()
                                       : '?',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 20, // Fonte ajustada proporcionalmente ao container de 50x50
+                                    fontSize:
+                                        20, // Fonte ajustada proporcionalmente ao container de 50x50
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.secondary,
                                   ),
@@ -300,7 +312,7 @@ class _SearchPageState extends State<SearchPage> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  job.location != null 
+                                  job.location != null
                                       ? '${job.workModel.name} • ${job.location}'
                                       : job.workModel.name,
                                   style: GoogleFonts.montserrat(
@@ -311,28 +323,29 @@ class _SearchPageState extends State<SearchPage> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              Icon(Icons.chevron_right, color: Colors.grey),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8.0),
-                      child: Icon(Icons.chevron_right, color: Colors.grey),
-                    ),
+                    // const Padding(
+                    //   padding: EdgeInsets.only(top: 35.0),
+                    //   child: Icon(Icons.chevron_right, color: Colors.grey),
+                    // ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-        
+
         if (job.isSubscribed)
           Positioned(
-            top: 12,
+            top: 18,
             right: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.green.shade100,
                 borderRadius: BorderRadius.circular(8),

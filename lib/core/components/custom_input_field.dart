@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Importe o pacote de fontes
+import 'package:flutter/services.dart'; // <-- IMPORTANTE: Para suportar os formatadores e máscaras
+import 'package:google_fonts/google_fonts.dart'; 
 import 'package:techjobs/core/style/app_colors.dart';
 import 'package:techjobs/core/style/app_fonts.dart';
 
@@ -10,6 +11,7 @@ class CustomInputField extends StatefulWidget {
   final bool isPassword;
   final TextInputType keyboardType;
   final FocusNode? focusNode;
+  final List<TextInputFormatter>? inputFormatters; // <-- NOVO: Permite injetar máscaras
 
   const CustomInputField({
     super.key,
@@ -19,6 +21,7 @@ class CustomInputField extends StatefulWidget {
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.focusNode,
+    this.inputFormatters, // <-- NOVO
   });
 
   @override
@@ -35,6 +38,15 @@ class _CustomInputFieldState extends State<CustomInputField> {
   }
 
   @override
+  void didUpdateWidget(CustomInputField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Se o Flutter reciclar o widget e mudar a propriedade isPassword, nós atualizamos o estado local
+    if (widget.isPassword != oldWidget.isPassword) {
+      _obscureText = widget.isPassword;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,6 +59,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
           focusNode: widget.focusNode,
           obscureText: _obscureText,
           keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters, // <-- NOVO: Aplica a máscara no widget nativo
           // 2. Garantindo que o texto digitado pelo usuário também fique na fonte certa
           style: GoogleFonts.montserrat(color: AppColors.textTitle),
           decoration: InputDecoration(

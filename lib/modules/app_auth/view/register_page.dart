@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:techjobs/core/components/custom_button.dart';
 import 'package:techjobs/core/components/custom_input_field.dart';
 import 'package:techjobs/core/shared/app_state.dart';
@@ -7,9 +8,7 @@ import 'package:techjobs/core/style/app_colors.dart';
 import 'package:techjobs/core/style/app_fonts.dart';
 import 'package:techjobs/modules/app_auth/controller/auth_controller.dart';
 import 'package:techjobs/modules/app_auth/model/user_model.dart';
-// Imports necessários para construir o modelo vazio de onboarding
 import 'package:techjobs/modules/candidato/model/candidate_model.dart';
-import 'package:techjobs/modules/candidato/model/job_model.dart'; // Ajuste o caminho do seu enum WorkModel se estiver em outro arquivo
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -28,6 +27,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordEC = TextEditingController();
 
   final _passwordFocusNode = FocusNode();
+
+  final _cnpjFormatter = MaskTextInputFormatter(
+    mask: '##.###.###/####-##',
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
 
   String _selectedRole = 'candidato';
 
@@ -52,7 +57,11 @@ class _RegisterPageState extends State<RegisterPage> {
       );
 
       if (state.data.role == 'company') {
-        Modular.to.pushNamedAndRemoveUntil('/company/', (route) => false);
+        Modular.to.pushNamedAndRemoveUntil(
+          '/company/edit-profile',
+          (route) => false,
+          arguments: {'name': _nameEC.text, 'cnpj': _cnpjEC.text},
+        );
       } else {
         final newCandidate = CandidateModel(
           id: state.data.id,
@@ -65,8 +74,6 @@ class _RegisterPageState extends State<RegisterPage> {
           experiences: [],
         );
 
-        // NAVEGAÇÃO NATIVA RESTRITA
-        // Remove todo o histórico de navegação ((route) => false) e injeta a edição como raiz.
         Modular.to.pushNamedAndRemoveUntil(
           '/candidate/edit-profile',
           (route) => false,
@@ -239,6 +246,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   hintText: 'Digite o CNPJ',
                   controller: _cnpjEC,
                   keyboardType: TextInputType.number,
+                  isPassword:
+                      false, // Garante explicitamente que a máscara não oculte o texto
+                  inputFormatters: [
+                    _cnpjFormatter,
+                  ], // Aplica o formatador criado
                 ),
                 const SizedBox(height: 16),
               ],

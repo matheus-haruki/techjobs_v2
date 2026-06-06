@@ -8,21 +8,19 @@ abstract class ISaveCompanyProfileUseCase {
 class SaveCompanyProfileUseCase implements ISaveCompanyProfileUseCase {
   final ICompanyRepository _repository;
 
-  SaveCompanyProfileUseCase(this._repository);
+  const SaveCompanyProfileUseCase(this._repository);
 
   @override
   Future<void> call(CompanyModel company) async {
-    // Regra de Negócio da Empresa
+    // Validação de regra de negócio (Domain Layer)
     if (company.name.trim().isEmpty) {
-      throw Exception('O nome da empresa é obrigatório.');
+      throw Exception('O nome da empresa não pode estar vazio.');
     }
 
-    // Se a empresa enviou um CNPJ, valida se não está vazio só com espaços
     if (company.cnpj != null && company.cnpj!.trim().isEmpty) {
-      throw Exception('O CNPJ não pode ser vazio.');
+       throw Exception('O CNPJ não pode ser apenas espaços em branco.');
     }
 
-    // Manda para o repositório salvar
     await _repository.saveProfile(company);
   }
 }

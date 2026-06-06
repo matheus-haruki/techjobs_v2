@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:techjobs/core/components/custom_app_bar.dart';
+import 'package:techjobs/core/shared/app_state.dart';
 import 'package:techjobs/core/style/app_colors.dart';
-import 'package:techjobs/modules/empresa/model/job_dashboard_model.dart';
-
-// 👇 1. Importamos o modelo recém-criado
+import 'package:techjobs/modules/empresa/controller/my_jobs_controller.dart';
+import 'package:techjobs/modules/empresa/model/job_model.dart';
 
 class MyJobsPage extends StatefulWidget {
   const MyJobsPage({super.key});
@@ -15,33 +16,22 @@ class MyJobsPage extends StatefulWidget {
 }
 
 class _MyJobsPageState extends State<MyJobsPage> {
-  // 👇 2. Atualizamos o tipo da lista (tiramos o "_")
-  final List<JobDashboardModel> _myJobs = [
-    JobDashboardModel(
-      id: '1',
-      title: 'Desenvolvedor(a) Flutter Pleno',
-      location: 'Remoto',
-      candidatesCount: 24,
-      status: 'Ativa',
-      postedDate: 'Há 2 dias',
-    ),
-    JobDashboardModel(
-      id: '2',
-      title: 'Tech Lead Mobile',
-      location: 'São Paulo, SP (Híbrido)',
-      candidatesCount: 8,
-      status: 'Ativa',
-      postedDate: 'Há 1 semana',
-    ),
-    JobDashboardModel(
-      id: '3',
-      title: 'Desenvolvedor(a) iOS Júnior',
-      location: 'Remoto',
-      candidatesCount: 156,
-      status: 'Pausada',
-      postedDate: 'Há 1 mês',
-    ),
-  ];
+  final _controller = Modular.get<MyJobsController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  void _loadData() {
+    final companyId = Supabase.instance.client.auth.currentUser?.id;
+    if (companyId != null) {
+      _controller.loadJobs(companyId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,11 +43,9 @@ class _MyJobsPageState extends State<MyJobsPage> {
         actions: [
           IconButton(
             onPressed: () async {
-              // 👇 ALTERADO AQUI: Usando caminho relativo com ./
               final jobCreated = await Modular.to.pushNamed<bool>(
                 './create-job',
               );
-
               if (!mounted) return;
 
               if (jobCreated == true) {
@@ -67,6 +55,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
                     backgroundColor: Colors.green,
                   ),
                 );
+                _loadData(); // Recarrega a lista real do banco
               }
             },
             icon: const Icon(
@@ -78,7 +67,6 @@ class _MyJobsPageState extends State<MyJobsPage> {
           const SizedBox(width: 8),
         ],
       ),
-
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -87,29 +75,60 @@ class _MyJobsPageState extends State<MyJobsPage> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
         ),
         clipBehavior: Clip.antiAlias,
-        child: _myJobs.isEmpty
-            ? _buildEmptyState()
-            : ListView.separated(
-                padding: const EdgeInsets.only(
-                  top: 24,
-                  left: 20,
-                  right: 20,
-                  bottom: 100,
+        child: ValueListenableBuilder<AppState<List<JobModel>>>(
+          valueListenable: _controller,
+          builder: (context, state, child) {
+            if (state is LoadingState) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.secondary),
+              );
+            }
+
+            if (state is ErrorState<List<JobModel>>) {
+              return Center(
+                child: Text(
+                  state.message,
+                  style: GoogleFonts.montserrat(color: Colors.redAccent),
                 ),
-                itemCount: _myJobs.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  return _buildJobDashboardCard(_myJobs[index]);
-                },
-              ),
+              );
+            }
+
+            if (state is SuccessState<List<JobModel>>) {
+              final jobs = state.data;
+
+              if (jobs.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return RefreshIndicator(
+                color: AppColors.secondary,
+                onRefresh: () async => _loadData(),
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(
+                    top: 24,
+                    left: 20,
+                    right: 20,
+                    bottom: 100,
+                  ),
+                  itemCount: jobs.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    return _buildJobDashboardCard(jobs[index]);
+                  },
+                ),
+              );
+            }
+
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
 
-  // 👇 3. Atualizamos o tipo do parâmetro aqui também
-  Widget _buildJobDashboardCard(JobDashboardModel job) {
-    final isActive = job.status == 'Ativa';
+  Widget _buildJobDashboardCard(JobModel job) {
+    
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -119,7 +138,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -128,7 +147,6 @@ class _MyJobsPageState extends State<MyJobsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Linha 1: Status e Data
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -138,24 +156,24 @@ class _MyJobsPageState extends State<MyJobsPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: isActive
+                  color: job.isActive
                       ? Colors.green.shade50
                       : Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  job.status,
+                  job.isActive ? 'Ativa' : 'Pausada',
                   style: GoogleFonts.montserrat(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: isActive
+                    color: job.isActive
                         ? Colors.green.shade700
                         : Colors.orange.shade700,
                   ),
                 ),
               ),
               Text(
-                job.postedDate,
+                'Criada recentemente', // Será ajustado via extension de DateTime no futuro
                 style: GoogleFonts.montserrat(
                   fontSize: 12,
                   color: Colors.grey.shade500,
@@ -165,8 +183,6 @@ class _MyJobsPageState extends State<MyJobsPage> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Linha 2: Título da Vaga
           Text(
             job.title,
             style: GoogleFonts.montserrat(
@@ -176,8 +192,6 @@ class _MyJobsPageState extends State<MyJobsPage> {
             ),
           ),
           const SizedBox(height: 4),
-
-          // Linha 3: Localização
           Row(
             children: [
               Icon(
@@ -187,7 +201,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                job.location,
+                job.location ?? 'Não informado',
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   color: Colors.grey.shade600,
@@ -195,13 +209,10 @@ class _MyJobsPageState extends State<MyJobsPage> {
               ),
             ],
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
             child: Divider(height: 1, color: Color(0xFFEEEEEE)),
           ),
-
-          // Linha 4: Métricas (Candidatos) e Ação
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -210,7 +221,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -224,7 +235,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${job.candidatesCount}',
+                        job.applicantCount.toString(),
                         style: GoogleFonts.montserrat(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -243,30 +254,33 @@ class _MyJobsPageState extends State<MyJobsPage> {
                   ),
                 ],
               ),
-
               OutlinedButton(
                 onPressed: () async {
-                  // Navega para a tela de gerenciamento passando a vaga
                   final deleted = await Modular.to.pushNamed<bool>(
-                    './manage-job', 
+                    './manage-job',
                     arguments: job,
                   );
 
-                  // Se a tela retornar true (vaga excluída), você pode recarregar a lista
-                  if (mounted && deleted == true) {
+                  if (!mounted) return;
+                  if (deleted == true) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Vaga excluída com sucesso!'),
                         backgroundColor: Colors.redAccent,
                       ),
                     );
-                    // Chame aqui seu setState ou método do controller para remover da lista local
+                    _loadData(); // Atualiza a lista caso a vaga seja apagada
                   }
                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
                 child: Text(
                   'Gerenciar',
@@ -276,7 +290,8 @@ class _MyJobsPageState extends State<MyJobsPage> {
                     color: AppColors.textTitle,
                   ),
                 ),
-              ),],
+              ),
+            ],
           ),
         ],
       ),

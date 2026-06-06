@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:techjobs/core/style/app_colors.dart';
-import 'package:techjobs/modules/empresa/view/widgets/company_profile_page.dart';
-import 'package:techjobs/modules/empresa/view/widgets/my_jobs_page.dart';
-import 'package:techjobs/modules/empresa/view/widgets/notifications_page.dart';
-import 'package:techjobs/modules/empresa/view/widgets/talent_feed_page.dart';
 
 class CompanyBasePage extends StatefulWidget {
   const CompanyBasePage({super.key});
@@ -16,25 +13,45 @@ class CompanyBasePage extends StatefulWidget {
 class _CompanyBasePageState extends State<CompanyBasePage> {
   int _currentIndex = 0;
 
-  // 1. Declaramos a lista de páginas de forma estática
-  final List<Widget> _pages = const [
-    TalentFeedPage(),
-    MyJobsPage(),
-    NotificationsPage(),
-    CompanyProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Aguarda o primeiro frame da UI ser desenhado para que o RouterOutlet esteja pronto
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Injeta a rota de Talentos automaticamente no inicialização
+      Modular.to.navigate('/company/talents');
+    });
+  }
 
   void _onTabTapped(int index) {
+    if (_currentIndex == index) return;
+
     setState(() {
       _currentIndex = index;
     });
+
+    // Delegação do roteamento para o Modular
+    switch (index) {
+      case 0:
+        Modular.to.navigate('/company/talents');
+        break;
+      case 1:
+        Modular.to.navigate('/company/jobs');
+        break;
+      case 2:
+        Modular.to.navigate('/company/notifications');
+        break;
+      case 3:
+        Modular.to.navigate('/company/profile');
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 2. Substituímos o PageView pelo IndexedStack (sem scroll horizontal)
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      // O IndexedStack foi removido. O RouterOutlet assume o controle do sub-roteamento.
+      body: const RouterOutlet(),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [

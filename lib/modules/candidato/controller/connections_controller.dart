@@ -8,18 +8,16 @@ class ConnectionsController extends ValueNotifier<AppState<List<JobModel>>> {
 
   ConnectionsController(this._getMatchesUseCase) : super(InitialState<List<JobModel>>());
 
-  Future<void> loadConnections(String candidateId) async {
-    // Transita para o estado de carregamento
-    value = LoadingState<List<JobModel>>();
+  Future<void> loadConnections(String candidateId, {bool isSilent = false}) async {
+    // Só emite estado de Loading se não for um refresh silencioso (evita flicker na UI)
+    if (!isSilent) {
+      value = LoadingState<List<JobModel>>();
+    }
 
     try {
-      // Executa o caso de uso e recupera a lista de Matches
       final jobs = await _getMatchesUseCase.call(candidateId);
-      
-      // Transita para o estado de sucesso
       value = SuccessState<List<JobModel>>(jobs);
     } catch (e) {
-      // Intercepta a falha e atualiza o estado com a mensagem de erro
       value = ErrorState<List<JobModel>>(
         e.toString().replaceAll('Exception: ', ''),
       );

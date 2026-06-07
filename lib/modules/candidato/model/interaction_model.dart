@@ -1,4 +1,11 @@
-enum InteractionStatus { unseen, like, dislike, match }
+enum InteractionStatus { 
+  unseen, 
+  like, 
+  dislike, 
+  match, 
+  company_like, 
+  company_dislike 
+}
 
 class InteractionModel {
   final String id;
@@ -23,11 +30,12 @@ class InteractionModel {
       candidateId: map['candidate_id'] ?? '',
       jobId: map['job_id'] ?? '',
       status: InteractionStatus.values.firstWhere(
+        // O .name no Dart converte perfeitamente o enum para String (ex: "company_like")
         (e) => e.name == map['status'],
         orElse: () => InteractionStatus.unseen,
       ),
-      createdAt: DateTime.parse(map['created_at']),
-      // Lê a data de agendamento se existir
+      // Adicionado um fallback seguro com DateTime.now() caso venha nulo na criação em memória
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : DateTime.now(),
       scheduledAt: map['scheduled_at'] != null ? DateTime.parse(map['scheduled_at']) : null,
     );
   }

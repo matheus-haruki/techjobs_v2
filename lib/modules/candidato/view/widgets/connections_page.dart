@@ -9,6 +9,9 @@ import 'package:techjobs/modules/candidato/model/job_model.dart';
 import 'package:techjobs/modules/candidato/controller/connections_controller.dart';
 import 'package:intl/intl.dart';
 
+// Importe o controller da BasePage para escutar a mudança de abas
+import 'package:techjobs/modules/candidato/controller/candidate_controller.dart'; 
+
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({super.key});
 
@@ -18,18 +21,39 @@ class ConnectionsPage extends StatefulWidget {
 
 class _ConnectionsPageState extends State<ConnectionsPage> {
   late final ConnectionsController _controller;
+  late final CandidateController _tabController;
 
   @override
   void initState() {
     super.initState();
     _controller = Modular.get<ConnectionsController>();
+    _tabController = Modular.get<CandidateController>();
+
+    // Registra o ouvinte para a troca de abas
+    _tabController.addListener(_onTabChanged);
+    
+    // Carregamento inicial (com loading visual)
     _loadMatches();
   }
 
-  void _loadMatches() {
+  @override
+  void dispose() {
+    // Prevenção de memory leak: remove o ouvinte ao destruir o widget
+    _tabController.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    // O índice 2 corresponde à aba de "Conexões" na sua BaseCandidatePage
+    if (_tabController.value == 2) {
+      _loadMatches(isSilent: true); // Recarrega os dados sem piscar a tela
+    }
+  }
+
+  void _loadMatches({bool isSilent = false}) {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId != null) {
-      _controller.loadConnections(userId);
+      _controller.loadConnections(userId, isSilent: isSilent);
     }
   }
 
@@ -68,14 +92,14 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
 
               return RefreshIndicator(
                 color: AppColors.primary,
-                onRefresh: () async => _loadMatches(),
+                // Refresh manual via "pull to refresh" não é silencioso
+                onRefresh: () async => _loadMatches(isSilent: false),
                 child: ListView.separated(
                   padding: const EdgeInsets.all(20),
                   itemCount: jobs.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    return _MatchCard(job: jobs[index]);
+                    return _MatchCard(job: jobs[index], onRefreshNeeded: () => _loadMatches(isSilent: true));
                   },
                 ),
               );
@@ -149,7 +173,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _loadMatches,
+              onPressed: () => _loadMatches(isSilent: false),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -165,8 +189,9 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
 
 class _MatchCard extends StatelessWidget {
   final JobModel job;
+  final VoidCallback onRefreshNeeded;
 
-  const _MatchCard({required this.job});
+  const _MatchCard({required this.job, required this.onRefreshNeeded});
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +249,7 @@ class _MatchCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      job.companyName?? 'Empresa Confidencial',
+                      job.companyName ?? 'Empresa Confidencial',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -276,17 +301,10 @@ class _MatchCard extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Quando retornar da tela de chat, recarregamos as conexões para atualizar a badge
-                    Modular.to
-                        .pushNamed('/candidate/chat', arguments: job)
-                        .then((_) {
-                          final userId =
-                              Supabase.instance.client.auth.currentUser?.id;
-                          if (userId != null) {
-                            Modular.get<ConnectionsController>()
-                                .loadConnections(userId);
-                          }
-                        });
+                    Modular.to.pushNamed('/candidate/chat', arguments: job).then((_) {
+                      // Ao voltar do chat, delega a atualização para a página principal
+                      onRefreshNeeded();
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),

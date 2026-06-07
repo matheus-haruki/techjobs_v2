@@ -96,16 +96,16 @@ class _LoginPageState extends State<LoginPage> {
                 isPassword: true, // Isso automaticamente liga o "olhinho" de ocultar/mostrar
               ),
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Esqueci minha senha',
-                    style: TextStyle(color: Color(0xFF5A92AA)),
-                  ),
-                ),
-              ),
+              // Align(
+              //   alignment: Alignment.centerLeft,
+              //   child: TextButton(
+              //     onPressed: () {},
+              //     child: const Text(
+              //       'Esqueci minha senha',
+              //       style: TextStyle(color: Color(0xFF5A92AA)),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 24),
 
               // Botão Entrar reagindo ao Estado

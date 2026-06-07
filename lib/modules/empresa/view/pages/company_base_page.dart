@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:techjobs/core/style/app_colors.dart';
+import 'package:techjobs/core/services/realtime_notification_service.dart'; 
 
 class CompanyBasePage extends StatefulWidget {
   const CompanyBasePage({super.key});
@@ -12,15 +13,29 @@ class CompanyBasePage extends StatefulWidget {
 
 class _CompanyBasePageState extends State<CompanyBasePage> {
   int _currentIndex = 0;
+  
+  // 1. Instancia o serviço de notificações
+  final _notificationService = RealtimeNotificationService();
 
   @override
   void initState() {
     super.initState();
+    
+    // 2. Liga o ouvinte em tempo real (o contexto já está disponível aqui)
+    _notificationService.startListening(context);
+
     // Aguarda o primeiro frame da UI ser desenhado para que o RouterOutlet esteja pronto
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Injeta a rota de Talentos automaticamente no inicialização
+      // Injeta a rota de Talentos automaticamente na inicialização
       Modular.to.navigate('/company/talents');
     });
+  }
+
+  @override
+  void dispose() {
+    // 3. Desliga a escuta de notificações ao sair da tela para poupar memória
+    _notificationService.stopListening();
+    super.dispose();
   }
 
   void _onTabTapped(int index) {

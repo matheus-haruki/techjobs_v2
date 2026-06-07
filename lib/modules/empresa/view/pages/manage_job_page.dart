@@ -111,55 +111,98 @@ class _ManageJobPageState extends State<ManageJobPage> {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.job.title,
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textTitle,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.job.title,
+              style: GoogleFonts.montserrat(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textTitle,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Colors.grey.shade500,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                widget.job.location ?? 'Remoto',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: Colors.grey.shade500,
                 ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$applicantsCount Inscritos',
+                const SizedBox(width: 4),
+                Text(
+                  widget.job.location ?? 'Remoto',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
                   ),
                 ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$applicantsCount Inscritos',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Faixa Salarial
+            Row(
+              children: [
+                Icon(
+                  Icons.attach_money_rounded,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  widget.job.salary,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textTitle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Descrição
+            Text(
+              'Descrição da Vaga',
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.job.description,
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -383,11 +426,13 @@ class _ManageJobPageState extends State<ManageJobPage> {
                 try {
                   // 1. Mostra um indicador de carregamento no próprio botão ou apenas aguarda
                   await _controller.deleteJob(widget.job.id);
-                  
+
                   // 2. Verifica se a tela ainda está montada antes de usar o context
                   if (context.mounted) {
                     Navigator.pop(context); // Fecha o dialog
-                    Modular.to.pop(true);   // Volta para a lista avisando que deletou
+                    Modular.to.pop(
+                      true,
+                    ); // Volta para a lista avisando que deletou
                   }
                 } catch (e) {
                   if (context.mounted) {

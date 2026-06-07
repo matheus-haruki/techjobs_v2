@@ -178,9 +178,28 @@ class _TalentFeedPageState extends State<TalentFeedPage> {
 
           if (talents.isEmpty) {
             return Center(
-              child: Text(
-                'Nenhum talento encontrado.',
-                style: GoogleFonts.montserrat(color: Colors.grey.shade600),
+              child: Padding(
+                padding: const EdgeInsets.all(0.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.person_off,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nenhum talento encontrado',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             );
           }

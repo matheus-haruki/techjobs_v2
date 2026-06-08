@@ -35,6 +35,14 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     });
   }
 
+  void _loadData() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      _profileController.loadProfile(userId);
+      _jobsController.loadJobs(userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,220 +98,224 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     final double appBarHeight = MediaQuery.of(context).size.height * 0.18;
     const double avatarRadius = 54.0;
 
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Column(
-                children: [
-                  Container(
-                    height: appBarHeight,
-                    width: double.infinity,
-                    color: AppColors.secondaryDark,
-                  ),
-                  const SizedBox(height: 70),
-                ],
-              ),
-              Positioned(
-                right: 20,
-                bottom: 0,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Modular.to.pushNamed('/company/edit-profile');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.secondary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: Text(
-                    'Editar',
-                    style: GoogleFonts.montserrat(
-                      color: AppColors.secondary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 30,
-                bottom: 70 - avatarRadius,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Container(
-                      width: avatarRadius * 2,
-                      height: avatarRadius * 2,
-                      color: Colors.grey.shade100,
-                      child:
-                          (company.avatarUrl != null &&
-                              company.avatarUrl!.isNotEmpty)
-                          ? Image.network(
-                              company.avatarUrl!,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const _ShimmerPlaceholder(
-                                      size: avatarRadius * 2,
-                                    );
-                                  },
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.domain_rounded,
-                                  color: Colors.grey,
-                                  size: 50,
-                                );
-                              },
-                            )
-                          : const Icon(
-                              Icons.domain_rounded,
-                              color: AppColors.secondary,
-                              size: 50,
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return RefreshIndicator(
+      color: AppColors.secondary,
+      onRefresh: () async => _loadData(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            Stack(
               children: [
-                const SizedBox(height: 20),
-                Text(
-                  company.name.isEmpty ? 'Nova Empresa' : company.name,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textTitle,
-                  ),
+                Column(
+                  children: [
+                    Container(
+                      height: appBarHeight,
+                      width: double.infinity,
+                      color: AppColors.secondaryDark,
+                    ),
+                    const SizedBox(height: 70),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  (company.cnpj != null && company.cnpj!.isNotEmpty)
-                      ? 'CNPJ: ${company.cnpj}'
-                      : 'CNPJ não informado',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 15,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Divider(color: Colors.grey.shade200, thickness: 1),
-                const SizedBox(height: 20),
-
-                // SEÇÃO: SOBRE A EMPRESA
-                _buildSectionCard(
-                  title: 'SOBRE A EMPRESA',
-                  child: Text(
-                    (company.description != null &&
-                            company.description!.isNotEmpty)
-                        ? company.description!
-                        : 'Descrição não informada. Clique em editar para contar a história da sua empresa.',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
+                Positioned(
+                  right: 20,
+                  bottom: 0,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Modular.to.pushNamed('/company/edit-profile');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.secondary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: Text(
+                      'Editar',
+                      style: GoogleFonts.montserrat(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                Positioned(
+                  left: 30,
+                  bottom: 70 - avatarRadius,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Container(
+                        width: avatarRadius * 2,
+                        height: avatarRadius * 2,
+                        color: Colors.grey.shade100,
+                        child:
+                            (company.avatarUrl != null &&
+                                company.avatarUrl!.isNotEmpty)
+                            ? Image.network(
+                                company.avatarUrl!,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const _ShimmerPlaceholder(
+                                        size: avatarRadius * 2,
+                                      );
+                                    },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.domain_rounded,
+                                    color: Colors.grey,
+                                    size: 50,
+                                  );
+                                },
+                              )
+                            : const Icon(
+                                Icons.domain_rounded,
+                                color: AppColors.secondary,
+                                size: 50,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  Text(
+                    company.name.isEmpty ? 'Nova Empresa' : company.name,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textTitle,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    (company.cnpj != null && company.cnpj!.isNotEmpty)
+                        ? 'CNPJ: ${company.cnpj}'
+                        : 'CNPJ não informado',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 15,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Divider(color: Colors.grey.shade200, thickness: 1),
+                  const SizedBox(height: 20),
 
-                // SEÇÃO: VAGAS ANUNCIADAS (Reativo com o MyJobsController)
-                _buildSectionCard(
-                  title: 'VAGAS ANUNCIADAS',
-                  child: ValueListenableBuilder<AppState<List<JobModel>>>(
-                    valueListenable: _jobsController,
-                    builder: (context, state, child) {
-                      if (state is LoadingState || state is InitialState) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: CircularProgressIndicator(
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                        );
-                      }
+                  // SEÇÃO: SOBRE A EMPRESA
+                  _buildSectionCard(
+                    title: 'SOBRE A EMPRESA',
+                    child: Text(
+                      (company.description != null &&
+                              company.description!.isNotEmpty)
+                          ? company.description!
+                          : 'Descrição não informada. Clique em editar para contar a história da sua empresa.',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-                      if (state is ErrorState) {
-                        return Text(
-                          'Falha ao carregar as vagas.',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.redAccent,
-                          ),
-                        );
-                      }
-
-                      if (state is SuccessState<List<JobModel>>) {
-                        final jobs = state.data;
-
-                        if (jobs.isEmpty) {
-                          return Text(
-                            'Nenhuma vaga anunciada no momento.',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
+                  // SEÇÃO: VAGAS ANUNCIADAS (Reativo com o MyJobsController)
+                  _buildSectionCard(
+                    title: 'VAGAS ANUNCIADAS',
+                    child: ValueListenableBuilder<AppState<List<JobModel>>>(
+                      valueListenable: _jobsController,
+                      builder: (context, state, child) {
+                        if (state is LoadingState || state is InitialState) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(
+                                color: AppColors.secondary,
+                              ),
                             ),
                           );
                         }
 
-                        return Column(
-                          children: jobs.map((job) {
-                            return Column(
-                              children: [
-                                _buildJobListItem(job: job),
-                                // Adiciona o divisor se não for o último item da lista
-                                if (job != jobs.last)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 8.0,
-                                    ),
-                                    child: Divider(
-                                      color: Color(0xFFEEEEEE),
-                                      height: 1,
-                                    ),
-                                  ),
-                              ],
+                        if (state is ErrorState) {
+                          return Text(
+                            'Falha ao carregar as vagas.',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.redAccent,
+                            ),
+                          );
+                        }
+
+                        if (state is SuccessState<List<JobModel>>) {
+                          final jobs = state.data;
+
+                          if (jobs.isEmpty) {
+                            return Text(
+                              'Nenhuma vaga anunciada no momento.',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
                             );
-                          }).toList(),
-                        );
-                      }
+                          }
 
-                      return const SizedBox.shrink();
-                    },
+                          return Column(
+                            children: jobs.map((job) {
+                              return Column(
+                                children: [
+                                  _buildJobListItem(job: job),
+                                  // Adiciona o divisor se não for o último item da lista
+                                  if (job != jobs.last)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 8.0,
+                                      ),
+                                      child: Divider(
+                                        color: Color(0xFFEEEEEE),
+                                        height: 1,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }).toList(),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                _buildLogoutButton(),
-                const SizedBox(height: 16),
-              ],
+                  _buildLogoutButton(),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

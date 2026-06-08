@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum InteractionStatus { like, dislike, company_like, company_dislike, match, unseen }
 
 extension InteractionStatusExtension on InteractionStatus {

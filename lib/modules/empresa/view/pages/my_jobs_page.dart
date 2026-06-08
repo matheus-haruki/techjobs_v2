@@ -43,13 +43,14 @@ class _MyJobsPageState extends State<MyJobsPage> {
         actions: [
           IconButton(
             onPressed: () async {
+              final currentContext = context;
               final jobCreated = await Modular.to.pushNamed<bool>(
                 './create-job',
               );
               if (!mounted) return;
 
               if (jobCreated == true) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(currentContext).showSnackBar(
                   const SnackBar(
                     content: Text('Vaga publicada com sucesso!'),
                     backgroundColor: Colors.green,
@@ -254,6 +255,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
               ),
               OutlinedButton(
                 onPressed: () async {
+                  final currentContext = context;
                   final deleted = await Modular.to.pushNamed<bool>(
                     './manage-job',
                     arguments: job,
@@ -261,7 +263,7 @@ class _MyJobsPageState extends State<MyJobsPage> {
 
                   if (!mounted) return;
                   if (deleted == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(currentContext).showSnackBar(
                       const SnackBar(
                         content: Text('Vaga excluída com sucesso!'),
                         backgroundColor: Colors.redAccent,

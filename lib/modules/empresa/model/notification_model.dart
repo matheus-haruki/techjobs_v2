@@ -21,7 +21,7 @@ class NotificationModel {
       title: map['title'] as String,
       message: map['message'] as String,
       isRead: map['is_read'] as bool? ?? false,
-      createdAt: DateTime.parse(map['created_at'] as String),
+      createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
       jobId: map['job_id'] as String?,
     );
   }

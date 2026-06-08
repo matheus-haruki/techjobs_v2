@@ -13,7 +13,6 @@ class NotificationDetailsPage extends StatelessWidget {
   });
 
   String _formatDate(DateTime date) {
-    // Retorna algo como "03/06/2026 às 15:30"
     return DateFormat("dd/MM/yyyy 'às' HH:mm").format(date);
   }
 

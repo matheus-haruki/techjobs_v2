@@ -274,11 +274,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                           children: jobs.map((job) {
                             return Column(
                               children: [
-                                _buildJobListItem(
-                                  title: job.title,
-                                  location: job.location ?? job.workModel.name,
-                                  isActive: job.isActive,
-                                ),
+                                _buildJobListItem(job: job),
                                 // Adiciona o divisor se não for o último item da lista
                                 if (job != jobs.last)
                                   const Padding(
@@ -347,68 +343,76 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     );
   }
 
-  Widget _buildJobListItem({
-    required String title,
-    required String location,
-    required bool isActive,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.secondary.withValues(alpha: 0.1)
-                : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            Icons.business_center_rounded,
-            size: 20,
-            color: isActive ? AppColors.secondary : Colors.grey.shade400,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isActive ? AppColors.textTitle : Colors.grey.shade500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                location,
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.green.shade50 : Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            isActive ? 'Ativa' : 'Pausada',
-            style: GoogleFonts.montserrat(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: isActive ? Colors.green.shade700 : Colors.orange.shade700,
+  Widget _buildJobListItem({required JobModel job}) {
+    return InkWell(
+      onTap: () {
+        Modular.to.pushNamed('./manage-job', arguments: job);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: job.isActive
+                  ? AppColors.secondary.withValues(alpha: 0.1)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.business_center_rounded,
+              size: 20,
+              color: job.isActive ? AppColors.secondary : Colors.grey.shade400,
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  job.title,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: job.isActive
+                        ? AppColors.textTitle
+                        : Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  job.location ?? job.workModel.name,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: job.isActive
+                  ? Colors.green.shade50
+                  : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              job.isActive ? 'Ativa' : 'Pausada',
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: job.isActive
+                    ? Colors.green.shade700
+                    : Colors.orange.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

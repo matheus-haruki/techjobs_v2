@@ -35,7 +35,7 @@ class RegisterUseCase implements IRegisterUseCase {
       throw Exception('Sua senha deve ter no mínimo 6 caracteres.');
     }
 
-    if (role != 'candidato' && role != 'empresa') {
+    if (role != 'candidate' && role != 'company') {
       throw Exception('Tipo de perfil inválido. Escolha Candidato ou Empresa.');
     }
 

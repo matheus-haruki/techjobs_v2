@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:techjobs/modules/candidato/controller/cadidate_controller.dart';
+import 'package:techjobs/core/services/realtime_notification_service.dart';
+import 'package:techjobs/modules/candidato/controller/candidate_controller.dart';
 import 'package:techjobs/modules/candidato/view/widgets/connections_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/feed_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/notifications_page.dart';
 import 'package:techjobs/modules/candidato/view/widgets/profile_page.dart';
-import 'package:techjobs/modules/candidato/view/widgets/search_page.dart'; // <-- Importante
+import 'package:techjobs/modules/candidato/view/widgets/search_page.dart';
+
+// Importe o seu serviço e o banner criados no Passo 2 e 3
+// import 'package:techjobs/core/components/in_app_notification.dart';
+// import 'package:techjobs/core/services/realtime_notification_service.dart';
 
 class BaseCandidatePage extends StatefulWidget {
   const BaseCandidatePage({super.key});
@@ -15,8 +20,10 @@ class BaseCandidatePage extends StatefulWidget {
 }
 
 class _BaseCandidatePageState extends State<BaseCandidatePage> {
-  // Recupera o controller do Modular
   final _controller = Modular.get<CandidateController>();
+  
+  // 1. Instancia o serviço
+  final _notificationService = RealtimeNotificationService();
 
   final List<Widget> _pages = [
     const FeedPage(),
@@ -30,8 +37,21 @@ class _BaseCandidatePageState extends State<BaseCandidatePage> {
   final Color _inactiveColor = Colors.grey;
 
   @override
+  void initState() {
+    super.initState();
+    // 2. Liga a escuta em tempo real assim que a tela principal abrir
+    _notificationService.startListening(context);
+  }
+
+  @override
+  void dispose() {
+    // 3. Desliga a escuta para não gastar memória caso o usuário faça logout
+    _notificationService.stopListening();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Usamos o ValueListenableBuilder para redesenhar a tela quando a aba mudar
     return ValueListenableBuilder<int>(
       valueListenable: _controller,
       builder: (context, currentIndex, child) {
@@ -52,7 +72,7 @@ class _BaseCandidatePageState extends State<BaseCandidatePage> {
               elevation: 0,
               backgroundColor: Colors.transparent,
               currentIndex: currentIndex,
-              onTap: _controller.changeTab, // Altera a aba pelo controller
+              onTap: _controller.changeTab,
               type: BottomNavigationBarType.fixed,
               selectedItemColor: _activeColor,
               unselectedItemColor: _inactiveColor,

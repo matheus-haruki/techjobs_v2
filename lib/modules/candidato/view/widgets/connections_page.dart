@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:techjobs/core/components/custom_app_bar.dart';
 import 'package:techjobs/core/style/app_colors.dart';
+import 'package:techjobs/core/shared/app_state.dart';
 import 'package:techjobs/modules/candidato/model/job_model.dart';
+import 'package:techjobs/modules/candidato/controller/connections_controller.dart';
+import 'package:intl/intl.dart';
+
+// Importe o controller da BasePage para escutar a mudança de abas
+import 'package:techjobs/modules/candidato/controller/candidate_controller.dart'; 
 
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({super.key});
@@ -13,35 +20,47 @@ class ConnectionsPage extends StatefulWidget {
 }
 
 class _ConnectionsPageState extends State<ConnectionsPage> {
-  // Simulando as vagas em que o candidato deu "Match" (Arrastou pra direita)
-  final List<JobModel> _matchedJobs = [
-    JobModel(
-      id: '1',
-      title: 'Desenvolvedor(a) Flutter Pleno',
-      company: 'TechCorp S/A',
-      location: 'Remoto',
-      salary: 'R\$ 6.000 - R\$ 8.000',
-      tags: ['Flutter', 'Dart', 'Firebase'],
-      description:
-          'Buscamos uma pessoa desenvolvedora para atuar na construção de interfaces modernas...',
-    ),
-    JobModel(
-      id: '4', // ID diferente simulando outra vaga
-      title: 'Mobile Tech Lead',
-      company: 'Fintech Bank',
-      location: 'Híbrido - São Paulo',
-      salary: 'R\$ 15.000 - R\$ 20.000',
-      tags: ['Flutter', 'Liderança', 'CI/CD'],
-      description:
-          'Lidere nossa equipe de engenharia mobile e ajude a escalar o nosso app para milhões de usuários.',
-    ),
-  ];
+  late final ConnectionsController _controller;
+  late final CandidateController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Modular.get<ConnectionsController>();
+    _tabController = Modular.get<CandidateController>();
+
+    // Registra o ouvinte para a troca de abas
+    _tabController.addListener(_onTabChanged);
+    
+    // Carregamento inicial (com loading visual)
+    _loadMatches();
+  }
+
+  @override
+  void dispose() {
+    // Prevenção de memory leak: remove o ouvinte ao destruir o widget
+    _tabController.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    // O índice 2 corresponde à aba de "Conexões" na sua BaseCandidatePage
+    if (_tabController.value == 2) {
+      _loadMatches(isSilent: true); // Recarrega os dados sem piscar a tela
+    }
+  }
+
+  void _loadMatches({bool isSilent = false}) {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      _controller.loadConnections(userId, isSilent: isSilent);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
-      // Usamos a nossa AppBar customizada (o Avatar do perfil já aparece automaticamente!)
       appBar: const CustomAppBar(title: 'Minhas Conexões'),
       body: Container(
         width: double.infinity,
@@ -50,14 +69,49 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
         ),
         clipBehavior: Clip.antiAlias,
-        child: _matchedJobs.isEmpty
-            ? _buildEmptyState()
-            : _buildConnectionsList(),
+        child: ValueListenableBuilder<AppState<List<JobModel>>>(
+          valueListenable: _controller,
+          builder: (context, state, child) {
+            if (state is InitialState<List<JobModel>> ||
+                state is LoadingState<List<JobModel>>) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
+
+            if (state is ErrorState<List<JobModel>>) {
+              return _buildErrorState(state.message);
+            }
+
+            if (state is SuccessState<List<JobModel>>) {
+              final jobs = state.data;
+
+              if (jobs.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return RefreshIndicator(
+                color: AppColors.primary,
+                // Refresh manual via "pull to refresh" não é silencioso
+                onRefresh: () async => _loadMatches(isSilent: false),
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: jobs.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    return _MatchCard(job: jobs[index], onRefreshNeeded: () => _loadMatches(isSilent: true));
+                  },
+                ),
+              );
+            }
+
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
 
-  // Boa prática de UX: O que mostrar quando a lista estiver vazia?
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -94,28 +148,64 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
     );
   }
 
-  Widget _buildConnectionsList() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(20),
-      itemCount: _matchedJobs.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final job = _matchedJobs[index];
-        return _buildMatchCard(job);
-      },
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(
+              'Falha ao carregar conexões',
+              style: GoogleFonts.montserrat(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textTitle,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => _loadMatches(isSilent: false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Tentar Novamente'),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildMatchCard(JobModel job) {
+class _MatchCard extends StatelessWidget {
+  final JobModel job;
+  final VoidCallback onRefreshNeeded;
+
+  const _MatchCard({required this.job, required this.onRefreshNeeded});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isScheduled = job.scheduledAt != null;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha:0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha:0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -126,7 +216,6 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo da Empresa
               Container(
                 height: 56,
                 width: 56,
@@ -141,29 +230,13 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                 ),
               ),
               const SizedBox(width: 16),
-
-              // Textos
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Novo Match! 🎉',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
+                    _BadgeStatus(
+                      isScheduled: isScheduled,
+                      scheduledDate: job.scheduledAt,
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -176,7 +249,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      job.company,
+                      job.companyName ?? 'Empresa Confidencial',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -188,13 +261,10 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
               ),
             ],
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: Divider(height: 1, color: Color(0xFFEEEEEE)),
           ),
-
-          // Botões de Ação
           Row(
             children: [
               Expanded(
@@ -231,7 +301,10 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Modular.to.pushNamed('/candidate/chat', arguments: job);
+                    Modular.to.pushNamed('/candidate/chat', arguments: job).then((_) {
+                      // Ao voltar do chat, delega a atualização para a página principal
+                      onRefreshNeeded();
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -247,7 +320,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
                     color: Colors.white,
                   ),
                   label: Text(
-                    'Mensagem',
+                    isScheduled ? 'Ver Agenda' : 'Mensagem',
                     style: GoogleFonts.montserrat(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -259,6 +332,45 @@ class _ConnectionsPageState extends State<ConnectionsPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BadgeStatus extends StatelessWidget {
+  final bool isScheduled;
+  final DateTime? scheduledDate;
+
+  const _BadgeStatus({required this.isScheduled, this.scheduledDate});
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isScheduled ? Colors.blue.shade50 : Colors.green.shade50;
+    final textColor = isScheduled
+        ? Colors.blue.shade700
+        : Colors.green.shade700;
+
+    String label = 'Novo Match! 🎉';
+    if (isScheduled && scheduledDate != null) {
+      final formattedDate = DateFormat(
+        "dd/MM/yyyy 'às' HH:mm",
+      ).format(scheduledDate!);
+      label = 'Agendada: $formattedDate';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.montserrat(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
       ),
     );
   }

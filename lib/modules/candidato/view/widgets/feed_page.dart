@@ -242,8 +242,8 @@ class _FeedPageState extends State<FeedPage> {
                         // 5. Interpolação segura de Null Safety para o modelo e localização
                         Text(
                           job.location != null
-                              ? '${job.workModel.name} • ${job.location}'
-                              : job.workModel.name,
+                              ? '${_formatWorkModel(job.workModel.name)} • ${job.location}'
+                              : _formatWorkModel(job.workModel.name),
                           style: GoogleFonts.montserrat(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -304,7 +304,7 @@ class _FeedPageState extends State<FeedPage> {
                     height: 1.5,
                     color: Colors.grey.shade700,
                   ),
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -374,6 +374,19 @@ class _FeedPageState extends State<FeedPage> {
         child: Icon(icon, color: color, size: 35),
       ),
     );
+  }
+
+  String _formatWorkModel(String model) {
+    switch (model) {
+      case 'hibrido':
+        return 'Híbrido';
+      case 'presencial':
+        return 'Presencial';
+      case 'remoto':
+        return 'Remoto';
+      default:
+        return '${model[0].toUpperCase()}${model.substring(1)}';
+    }
   }
 
   // Widget para quando a lista de vagas acabar

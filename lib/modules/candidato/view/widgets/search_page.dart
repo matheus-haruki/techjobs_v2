@@ -246,7 +246,7 @@ class _SearchPageState extends State<SearchPage> {
                       height: 50,
                       width: 50,
                       decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.2),
+                        color: AppColors.white,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: ClipRRect(
